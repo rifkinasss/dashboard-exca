@@ -61,3 +61,20 @@ test("quality filters combine severity, plot, row and type without altering issu
   assert.ok(found.includes(issue));
   assert.equal(filterQuality(view.issues, view.records, { severity: issue.severity, plot: "B", row: "4", code: issue.code }).length, 0);
 });
+
+test("fuel comparison follows period filters and preserves missing, zero and invalid values", async () => {
+  const { fuelByPlot } = await import("../lib/interactive-monitoring");
+  const input = [
+    row({ no: 1, plotCode: "A", date: "01/10/2026", fuelRefill: 10, actualFuelUsage: 5 }),
+    row({ no: 2, plotCode: "A", date: "02/10/2026", fuelRefill: 0, actualFuelUsage: 0 }),
+    row({ no: 3, plotCode: "B", date: "02/10/2026", fuelRefill: "", actualFuelUsage: 0 }),
+    row({ no: 4, plotCode: "C", date: "03/10/2026", fuelRefill: -5, actualFuelUsage: 7 }),
+    row({ no: 5, plotCode: "A", date: "01/11/2026", fuelRefill: 500, actualFuelUsage: 500 }),
+    row({ no: 6, plotCode: "D", date: "", fuelRefill: 900, actualFuelUsage: 900 }),
+  ];
+  const view = buildDashboardViewModel(input, { ...all, startDate: "2026-10-01", endDate: "2026-10-31" });
+  assert.deepEqual(fuelByPlot(view.filteredValidatedRecords), [{ code: "A", refill: 10, fuel: 5 }, { code: "B", refill: null, fuel: 0 }, { code: "C", refill: null, fuel: 7 }]);
+  assert.equal(view.summary.totals.refill, 10);
+  assert.equal(view.summary.totals.fuel, 12);
+  assert.deepEqual(fuelByPlot([]), []);
+});

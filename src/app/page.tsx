@@ -8,7 +8,10 @@ import Loading from "./loading";
 
 async function DashboardContent() {
   await connection();
-  const data = await getDashboardData();
+  const [data] = await Promise.all([
+    getDashboardData(),
+    new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+  ]);
   if (data.kind === "error") {
     return <main className="route-state"><h1>Sinkronisasi dashboard gagal</h1><SourceStatus status={data.status} /></main>;
   }

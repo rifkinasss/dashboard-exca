@@ -25,7 +25,7 @@ export function PlotSummary({ plots, showAll, onShowAllChange, startDate, endDat
           <span className="panel-meta">{visible.length} petak</span>
         </div>
       </CardHeader>
-      <CardContent className="table-scroll" tabIndex={0} role="region" aria-label="Tabel ringkasan petak">
+      <CardContent className="table-scroll plot-summary-table" tabIndex={0} role="region" aria-label="Tabel ringkasan petak">
         <Table>
           <TableHeader><TableRow>
             <TableHead scope="col">Kode Petak</TableHead><TableHead scope="col" className="num">Luas (Ha)</TableHead>

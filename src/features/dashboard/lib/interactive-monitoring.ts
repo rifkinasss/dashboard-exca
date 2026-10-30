@@ -42,6 +42,13 @@ export function monitoringTrend(rows: readonly ValidatedOverviewRecord[], interv
   return result;
 }
 
+export function fuelByPlot(rows: readonly ValidatedOverviewRecord[]) {
+  return [...Map.groupBy(rows, (row) => row.record.plotCode)].map(([code, group]) => {
+    const { refill, fuel } = calculateKpis(group);
+    return { code, refill, fuel };
+  }).sort((a, b) => a.code.localeCompare(b.code));
+}
+
 export function plotDetails(code: string, allRows: readonly ValidatedOverviewRecord[], periodRows: readonly ValidatedOverviewRecord[]) {
   const history = allRows.filter(({ record, duplicateOf }) => record.plotCode === code && duplicateOf === null && validDate(record.date));
   const dates = history.map(({ record }) => record.date!).sort();

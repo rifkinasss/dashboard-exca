@@ -120,3 +120,29 @@ test("negative tank and inconsistent HM are reported without altering unrelated 
   assert.equal(view.summary.totals.fuel, 100);
   assert.equal(view.summary.totals.hours, null);
 });
+
+test("worked area sums unique active plot metadata including source zeros", () => {
+  const data = [
+    row({ no: 1, plotCode: "A", plotArea: 8.6 }),
+    row({ no: 2, plotCode: "A", plotArea: "", date: "02/10/2026" }),
+    row({ no: 3, plotCode: "B", plotArea: 7.1 }),
+    row({ no: 4, plotCode: "C", plotArea: 0 }),
+    row({ no: 5, plotCode: "D", plotArea: 0 }),
+    row({ no: 6, plotCode: "E", plotArea: 22.2 }),
+    row({ no: 7, plotCode: "F", plotArea: 8.56, date: "" }),
+  ];
+  const view = buildDashboardViewModel(data, all);
+  assert.equal(Number(view.workedArea.value?.toFixed(1)), 37.9);
+  assert.equal(view.workedArea.zeroCount, 2);
+  assert.equal(view.workedArea.unavailableCount, 0);
+  assert.equal(view.summary.totals.area, null);
+  assert.equal(view.issues.filter((issue) => issue.code === "zero_area").length, 2);
+  const partial = buildDashboardViewModel([...data, row({ no: 8, plotCode: "G", plotArea: "" })], all);
+  assert.equal(Number(partial.workedArea.value?.toFixed(1)), 37.9);
+  assert.equal(partial.workedArea.unavailableCount, 1);
+  const conflict = buildDashboardViewModel([...data, row({ no: 9, plotCode: "C", plotArea: 2, date: "02/10/2026" })], all);
+  assert.equal(conflict.workedArea.unavailableCount, 1);
+  assert.equal(conflict.workedArea.zeroCount, 1);
+  assert.ok(conflict.issues.some((issue) => issue.code === "area_conflict"));
+  assert.equal(buildDashboardViewModel(data, { ...all, startDate: "2026-11-01" }).workedArea.value, null);
+});

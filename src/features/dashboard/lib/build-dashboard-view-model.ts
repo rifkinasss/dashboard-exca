@@ -15,6 +15,17 @@ export function buildDashboardViewModel(rawRows: readonly RawOverviewRow[], filt
   const periodPlots = aggregateByPlot(filtered, options.sheetOrderConfirmed);
   const inventory = buildPlotInventory(validated.records, periodPlots, datedRows, filters, options.sheetOrderConfirmed);
   const inventoryByCode = new Map(inventory.map((plot) => [plot.code, plot]));
+  const recordsByRow = new Map(normalized.records.map((record) => [record.source.row, record]));
+  const areaValues = inventory.filter((plot) => plot.includedActivity).map((plot) => {
+    if (plot.area !== null) return plot.area;
+    const candidates = plot.areaMetadata.sourceRows.map((source) => recordsByRow.get(source.row));
+    return candidates.length > 0 && candidates.every((record) => record?.cellStates.plotArea === "valid" && record.plotArea === 0) ? 0 : null;
+  });
+  const workedArea = {
+    value: sumMeasured(areaValues),
+    unavailableCount: areaValues.filter((value) => value === null).length,
+    zeroCount: areaValues.filter((value) => value === 0).length,
+  };
   const plots = periodPlots.map((plot) => {
     const metadata = inventoryByCode.get(plot.code);
     return { ...plot, area: metadata?.area ?? null, areaRequiresReview: metadata?.areaRequiresReview ?? false };
@@ -35,7 +46,6 @@ export function buildDashboardViewModel(rawRows: readonly RawOverviewRow[], filt
   const eligible = validated.records.filter((row) => row.duplicateOf === null && row.record.plotCode && validDate(row.record.date));
   const visibleInventory = inventory.filter((plot) => (!filters.plotCodes.length || filters.plotCodes.includes(plot.code)) &&
     (!filters.statuses.length || filters.statuses.some((status) => status === plot.status)));
-  const recordsByRow = new Map(normalized.records.map((record) => [record.source.row, record]));
   const normalizationIssues = normalized.issues.filter((issue) => {
     if (issue.code !== "missing_value" || (issue.field !== "plotArea" && issue.field !== "totalFuelConsumption")) return true;
     const plot = inventoryByCode.get(recordsByRow.get(issue.source.row)?.plotCode ?? "");
@@ -43,6 +53,7 @@ export function buildDashboardViewModel(rawRows: readonly RawOverviewRow[], filt
   });
   return {
     summary,
+    workedArea,
     inventory,
     visibleInventory,
     filteredRecords: filtered.map((row) => row.record),

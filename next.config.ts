@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Keep production builds from replacing a running development server cache.
+  // Isolate the development server cache from production builds.
   distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
   cacheComponents: true,
   partialPrefetching: true,

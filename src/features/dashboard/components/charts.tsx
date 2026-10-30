@@ -2,25 +2,16 @@
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart3, ChartNoAxesCombined, PieChart as PieIcon, Settings, Hourglass } from "lucide-react";
+import { BarChart3, ChartNoAxesCombined, Settings, Hourglass, Fuel } from "lucide-react";
 import {
-  Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
+  Bar, BarChart, CartesianGrid, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import type { DashboardSummary, ValidatedOverviewRecord } from "../types";
-import { monitoringTrend } from "../lib/interactive-monitoring";
+import { fuelByPlot, monitoringTrend } from "../lib/interactive-monitoring";
 import { formatDate, formatNumber } from "../lib/format";
 
 const orange = "#EA580C";
-const statusColors: Record<string, string> = {
-  "Dalam pengerjaan": "#ffa94f",
-  "Mulai pengerjaan": "#f97316",
-  Selesai: "#75aa58",
-  Ditunda: "#F59E0B",
-  "Belum mulai": "#94A3B8",
-  "Belum diketahui": "#475569",
-  "Perlu tinjau": "#475569",
-};
 const axis = { tickLine: false, axisLine: false, tick: { fill: "#64748B", fontSize: 11 } };
 const tooltipStyle = { border: "1px solid #E2E8F0", borderRadius: 6, fontSize: 12, color: "#334155" };
 const subscribe = () => () => {};
@@ -34,7 +25,7 @@ const getReducedMotion = () => window.matchMedia(motionQuery).matches;
 const getServerReducedMotion = () => true;
 const chartTitles = [
   "Konsumsi Solar per Petak", "Tren Pemakaian Solar Harian", "Status Pekerjaan",
-  "Efisiensi Solar per Petak", "Jam Kerja per Petak",
+  "Efisiensi Solar per Petak", "Jam Kerja per Petak", "Pengisian vs Pemakaian Solar per Petak",
 ];
 
 function ChartPanel({ title, description, children, empty, className = "" }: {
@@ -57,13 +48,14 @@ function ChartPanel({ title, description, children, empty, className = "" }: {
 export function Charts({ summary, rows, summaryPanel }: { summary: DashboardSummary; rows: ValidatedOverviewRecord[]; summaryPanel: ReactNode }) {
   const [interval, setInterval] = useState<"daily" | "weekly">("daily");
   const trend = useMemo(() => monitoringTrend(rows, interval), [rows, interval]);
+  const fuelComparison = useMemo(() => fuelByPlot(rows), [rows]);
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   const reducedMotion = useSyncExternalStore(subscribeMotion, getReducedMotion, getServerReducedMotion);
   if (!mounted) {
     return (
       <div className="chart-grid" role="status" aria-label="Menyiapkan grafik">
-        {chartTitles.map((title, index) => (
-          <section className={`panel chart-panel ${index < 2 ? "chart-wide" : ""}`} key={title}>
+        {chartTitles.filter((_, index) => index !== 2).map((title, index) => (
+          <section className={`panel chart-panel ${index < 2 ? "chart-wide" : ""} ${index === 4 ? "fuel-comparison-chart" : ""}`} key={title}>
             <h2>{title}</h2><div className="chart-area chart-loading">Menyiapkan grafik…</div>
           </section>
         ))}
@@ -103,38 +95,33 @@ export function Charts({ summary, rows, summaryPanel }: { summary: DashboardSumm
           <li><span className="trend-legend-swatch trend-legend-hours" aria-hidden="true" />Jam kerja · jam (sumbu kanan)</li>
         </ul>
       </Card>
-      <section className="panel status-panel" aria-label={chartTitles[2]}>
-        <div className="panel-heading"><div className="chart-heading"><PieIcon aria-hidden="true" /><div><h2>{chartTitles[2]}</h2><p>Status terakhir aktivitas dalam periode</p></div></div></div>
-        <div className="status-chart">
-          {plots.length ? <>
-            <div className="donut-chart">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart accessibilityLayer>
-                  <Pie data={summary.statuses} dataKey="count" nameKey="status" innerRadius="68%" outerRadius="92%" paddingAngle={3} stroke="none" isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out">
-                    {summary.statuses.map((item) => <Cell key={item.status} fill={statusColors[item.status]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value} petak`, "Jumlah"]} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="donut-total"><strong>{plots.length}</strong><span>petak</span></div>
-            </div>
-            <ul className="status-legend">
-              {summary.statuses.map((item) => (
-                <li key={item.status}>
-                  <span className="legend-dot" style={{ background: statusColors[item.status] }} />
-                  <span>{item.status}</span><strong>{item.count}</strong>
-                </li>
-              ))}
-            </ul>
-          </> : <p className="empty-chart">Tidak ada petak pada filter ini.</p>}
-        </div>
-      </section>
       <ChartPanel title={chartTitles[3]} description="Solar riil ÷ HM berpasangan · L/jam" empty={!plots.some((plot) => plot.efficiency !== null)}>
         <HorizontalChart plots={plots} dataKey="efficiency" unit="L/jam" reducedMotion={reducedMotion} />
       </ChartPanel>
       <ChartPanel title={chartTitles[4]} description="Total hour meter operasional · jam" empty={!plots.some((plot) => plot.hours !== null)}>
         <HorizontalChart plots={plots} dataKey="hours" unit="jam" reducedMotion={reducedMotion} />
       </ChartPanel>
+      <Card className="panel chart-panel fuel-comparison-chart" aria-label={chartTitles[5]}>
+        <CardHeader className="panel-heading"><div className="chart-heading"><Fuel aria-hidden="true" /><div><CardTitle>{chartTitles[5]}</CardTitle><CardDescription>Total aktivitas sesuai filter · liter</CardDescription></div></div></CardHeader>
+        <CardContent className="chart-area">
+          {!fuelComparison.some((plot) => plot.refill !== null || plot.fuel !== null) ? <p className="empty-chart">Tidak ada pengukuran pada filter ini.</p> : <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={fuelComparison} margin={{ top: 12, right: 8, bottom: 0, left: 0 }} accessibilityLayer>
+              <CartesianGrid vertical={false} stroke="#E2E8F0" strokeDasharray="3 4" />
+              <XAxis dataKey="code" {...axis} tickMargin={10} />
+              <YAxis {...axis} width={46} tickFormatter={formatNumber} />
+              <Tooltip cursor={{ fill: "#FFF7ED" }} content={({ active, label }) => { const plot = fuelComparison.find((item) => item.code === String(label)); return active && plot ? <div className="trend-tooltip"><strong>{plot.code}</strong><br />Solar masuk: {formatNumber(plot.refill)} L<br />Solar riil: {formatNumber(plot.fuel)} L</div> : null; }} />
+              <Bar dataKey="refill" name="Solar masuk" fill="#2563EB" maxBarSize={30} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
+              <Bar dataKey="fuel" name="Solar riil" fill={orange} maxBarSize={30} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
+            </BarChart>
+          </ResponsiveContainer>}
+        </CardContent>
+        <ul className="trend-legend" aria-label="Legenda perbandingan solar">
+          <li><span className="trend-legend-swatch trend-legend-hours" aria-hidden="true" />Solar masuk · L</li>
+          <li><span className="trend-legend-swatch trend-legend-fuel" aria-hidden="true" />Solar riil · L</li>
+        </ul>
+        <details className="fuel-comparison-details"><summary>Lihat nilai per petak</summary><div className="table-scroll" tabIndex={0} role="region" aria-label="Nilai perbandingan solar per petak"><table><thead><tr><th scope="col">Kode petak</th><th scope="col">Solar masuk (L)</th><th scope="col">Solar riil (L)</th></tr></thead><tbody>{fuelComparison.map((plot) => <tr key={plot.code}><th scope="row">{plot.code}</th><td>{formatNumber(plot.refill)}</td><td>{formatNumber(plot.fuel)}</td></tr>)}</tbody></table></div></details>
+        <p className="fuel-comparison-note">N/A berarti pengukuran belum tersedia atau tidak valid. Selisih bukan ukuran sisa stok.</p>
+      </Card>
       {summaryPanel}
     </div>
   );
