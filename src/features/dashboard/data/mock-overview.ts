@@ -12,7 +12,7 @@ const plots: { code: string; area: number; status: WorkStatus; hours: number }[]
 ];
 const number = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 8, useGrouping: true });
 
-// Synthetic rows in A–O order exercise the same parser as the future sheet source.
+// Synthetic rows in A–P order exercise the same parser as the future sheet source.
 export const mockOverview: RawOverviewRow[] = plots.flatMap((plot, index) => {
   let cumulative = 0;
   let meter = 1200 + index * 130;
@@ -24,7 +24,7 @@ export const mockOverview: RawOverviewRow[] = plots.flatMap((plot, index) => {
     cumulative += fuel;
     const missing = index === 4 && activity === 3;
     return [
-      index * 8 + activity + 1, plot.code, number.format(plot.area), number.format(cumulative),
+      index * 8 + activity + 1, `SPK-${String(index + 1).padStart(3, "0")}`, plot.code, number.format(plot.area), number.format(cumulative),
       `${String(day).padStart(2, "0")}/10/2026`, number.format(start), number.format(meter), number.format(hours), 65,
       activity % 2 === 0 && hours > 0 ? 250 : 0,
       missing || hours === 0 ? "" : number.format(fuel / hours), missing ? "" : fuel,

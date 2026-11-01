@@ -5,6 +5,7 @@ import { defaultFilters, filterOverview } from "./overview";
 import { aggregateByPlot } from "./aggregate-by-plot";
 import { aggregateDailyTrend } from "./aggregate-daily-trend";
 import { calculateKpis, measurement, sumMeasured } from "./calculate-kpis";
+import { calculateMonthlyAreaTarget } from "./monthly-area-target";
 import { buildPlotInventory } from "./plot-inventory";
 
 export function buildDashboardViewModel(rawRows: readonly RawOverviewRow[], filters: DashboardFilters = defaultFilters, options: ProcessingOptions = {}) {
@@ -14,6 +15,7 @@ export function buildDashboardViewModel(rawRows: readonly RawOverviewRow[], filt
   const datedRows = filterOverview(validated.records, { ...filters, statuses: [] }, options.sheetOrderConfirmed);
   const periodPlots = aggregateByPlot(filtered, options.sheetOrderConfirmed);
   const inventory = buildPlotInventory(validated.records, periodPlots, datedRows, filters, options.sheetOrderConfirmed);
+  const monthlyTarget = calculateMonthlyAreaTarget(filtered, inventory, normalized.records, filters);
   const inventoryByCode = new Map(inventory.map((plot) => [plot.code, plot]));
   const recordsByRow = new Map(normalized.records.map((record) => [record.source.row, record]));
   const areaValues = inventory.filter((plot) => plot.includedActivity).map((plot) => {
@@ -44,7 +46,11 @@ export function buildDashboardViewModel(rawRows: readonly RawOverviewRow[], filt
     missingMeasurements: filtered.filter((row) => (["actualFuelUsage", "workingHours", "fuelRefill"] as const).some((field) => measurement(row, field) === null)).length,
   };
   const eligible = validated.records.filter((row) => row.duplicateOf === null && row.record.plotCode && validDate(row.record.date));
+  const spkGroups = Map.groupBy(normalized.records.filter((record) => record.spkNumber !== null), (record) => record.spkNumber!);
+  const spkOptions = [...spkGroups].map(([number, records]) => ({ number, plots: [...new Set(records.map((record) => record.plotCode).filter(Boolean))].sort() })).sort((a, b) => a.number.localeCompare(b.number));
+  const spkPlots = new Set(spkOptions.filter((option) => filters.selectedSpkNumbers.includes(option.number)).flatMap((option) => option.plots));
   const visibleInventory = inventory.filter((plot) => (!filters.plotCodes.length || filters.plotCodes.includes(plot.code)) &&
+    (!filters.selectedSpkNumbers.length || spkPlots.has(plot.code)) &&
     (!filters.statuses.length || filters.statuses.some((status) => status === plot.status)));
   const normalizationIssues = normalized.issues.filter((issue) => {
     if (issue.code !== "missing_value" || (issue.field !== "plotArea" && issue.field !== "totalFuelConsumption")) return true;
@@ -53,15 +59,18 @@ export function buildDashboardViewModel(rawRows: readonly RawOverviewRow[], filt
   });
   return {
     summary,
+    monthlyTarget,
     workedArea,
     inventory,
     visibleInventory,
     filteredRecords: filtered.map((row) => row.record),
     filteredValidatedRecords: filtered,
     validatedRecords: validated.records,
+    scopedRecords: validated.records.filter(({ record }) => !filters.selectedSpkNumbers.length || (record.spkNumber !== null && filters.selectedSpkNumbers.includes(record.spkNumber))),
     records: normalized.records,
-    issues: [...normalizationIssues, ...validated.issues].sort((a, b) => a.source.row - b.source.row),
+    issues: [...normalizationIssues, ...validated.issues, ...monthlyTarget.issues].sort((a, b) => a.source.row - b.source.row),
     plotCodes: inventory.map((plot) => plot.code),
+    spkOptions,
     periods: [...new Set(eligible.map((row) => row.record.date!.slice(0, 7)))].sort(),
     excludedRows: validated.records.length - eligible.length,
   };

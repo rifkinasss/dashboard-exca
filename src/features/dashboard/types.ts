@@ -4,14 +4,17 @@ export type RawCell = string | number | boolean | null | undefined;
 export type RawOverviewRow = readonly RawCell[];
 export type CellState = "valid" | "missing" | "invalid";
 
+export interface PlotCodeMerge { startRow: number; endRow: number; }
+
 export interface SourceRow {
   worksheet: string;
   row: number;
 }
 
-/** Overview columns A–O. Dates are local calendar dates, never timestamps. */
+/** Overview columns A–P. Dates are local calendar dates, never timestamps. */
 export interface OverviewRecord {
   no: number | null;
+  spkNumber: string | null;
   plotCode: string;
   plotArea: number | null;
   totalFuelConsumption: number | null;
@@ -27,41 +30,46 @@ export interface OverviewRecord {
   workStatus: WorkStatus | null;
   notes: string | null;
   source: SourceRow;
+  plotCodeSource: SourceRow | null;
+  spkSource: SourceRow | null;
   raw: RawOverviewRow;
   cellStates: Record<OverviewField, CellState>;
 }
 
 export const overviewColumns = [
   { column: "A", header: "No", field: "no" },
-  { column: "B", header: "Kode Petak", field: "plotCode" },
-  { column: "C", header: "Luas Petak (Ha)", field: "plotArea" },
-  { column: "D", header: "Total Konsumsi Solar", field: "totalFuelConsumption" },
-  { column: "E", header: "Tanggal", field: "date" },
-  { column: "F", header: "HM Awal", field: "hmStart" },
-  { column: "G", header: "HM Akhir", field: "hmEnd" },
-  { column: "H", header: "HM Kerja (Jam)", field: "workingHours" },
-  { column: "I", header: "Est. Jam Kerja", field: "estimatedWorkingHours" },
-  { column: "J", header: "Pengisian Solar (L)", field: "fuelRefill" },
-  { column: "K", header: "Pemakaian Solar per Jam (L/Hr)", field: "fuelPerHour" },
-  { column: "L", header: "Pemakaian Solar Riil (L)", field: "actualFuelUsage" },
-  { column: "M", header: "Sisa/Stok Tangki (L)", field: "remainingFuel" },
-  { column: "N", header: "Status Pekerjaan", field: "workStatus" },
-  { column: "O", header: "Keterangan", field: "notes" },
+  { column: "B", header: "No. SPK", field: "spkNumber" },
+  { column: "C", header: "Kode Petak", field: "plotCode" },
+  { column: "D", header: "Luas Petak (Ha)", field: "plotArea" },
+  { column: "E", header: "Total Konsumsi Solar", field: "totalFuelConsumption" },
+  { column: "F", header: "Tanggal", field: "date" },
+  { column: "G", header: "HM Awal", field: "hmStart" },
+  { column: "H", header: "HM Akhir", field: "hmEnd" },
+  { column: "I", header: "HM Kerja (Jam)", field: "workingHours" },
+  { column: "J", header: "Est. Jam Kerja", field: "estimatedWorkingHours" },
+  { column: "K", header: "Pengisian Solar (L)", field: "fuelRefill" },
+  { column: "L", header: "Pemakaian Solar per Jam (L/Hr)", field: "fuelPerHour" },
+  { column: "M", header: "Pemakaian Solar Riil (L)", field: "actualFuelUsage" },
+  { column: "N", header: "Sisa/Stok Tangki (L)", field: "remainingFuel" },
+  { column: "O", header: "Status Pekerjaan", field: "workStatus" },
+  { column: "P", header: "Keterangan", field: "notes" },
 ] as const;
 
 export type OverviewField = (typeof overviewColumns)[number]["field"];
-export type NumericField = Exclude<OverviewField, "plotCode" | "date" | "workStatus" | "notes">;
+export type NumericField = Exclude<OverviewField, "spkNumber" | "plotCode" | "date" | "workStatus" | "notes">;
 export type NumberPolicy = "id-ID" | "strict";
 export interface ProcessingOptions {
   worksheetName?: string;
   numberPolicy?: NumberPolicy;
   firstDataRow?: number;
   sheetOrderConfirmed?: boolean;
+  plotCodeMerges?: readonly PlotCodeMerge[];
+  spkMerges?: readonly PlotCodeMerge[];
 }
 export interface DataQualityIssue {
   severity: "info" | "warning" | "error";
   code: "missing_value" | "invalid_value" | "negative_value" | "hm_reversed" |
-    "hm_mismatch" | "area_conflict" | "zero_area" | "metadata_conflict" | "metadata_unassigned" | "undated_plot" | "status_conflict" | "duplicate_record" | "unpaired_measurements" | "column_count";
+    "hm_mismatch" | "area_conflict" | "zero_area" | "metadata_conflict" | "metadata_unassigned" | "undated_plot" | "completion_area_excluded" | "status_conflict" | "duplicate_record" | "unpaired_measurements" | "column_count";
   source: SourceRow;
   field: OverviewField | null;
   message: string;
@@ -77,6 +85,7 @@ export interface DashboardFilters {
   startDate: string;
   endDate: string;
   plotCodes: string[];
+  selectedSpkNumbers: string[];
   statuses: WorkStatus[];
 }
 export interface PlotSummary {

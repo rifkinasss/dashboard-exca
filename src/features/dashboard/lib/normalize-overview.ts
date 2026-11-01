@@ -55,6 +55,12 @@ export function normalizeWorkStatus(value: RawCell): ParsedCell<NonNullable<Over
   return status ? { state: "valid", value: status } : { state: "invalid", value: null };
 }
 
+function parseSpkNumber(value: RawCell): ParsedCell<string> {
+  if (missing(value)) return { state: "missing", value: null };
+  if (typeof value !== "string" && !(typeof value === "number" && Number.isFinite(value))) return { state: "invalid", value: null };
+  return { state: "valid", value: String(value).trim() };
+}
+
 function parseNotes(value: RawCell): ParsedCell<string> {
   if (missing(value)) return { state: "missing", value: null };
   return typeof value === "string" ? { state: "valid", value: value.trim() } : { state: "invalid", value: null };
@@ -64,44 +70,66 @@ export function normalizeOverview(rows: readonly RawOverviewRow[], options: Proc
   const firstDataRow = options.firstDataRow ?? 2;
   if (!Number.isSafeInteger(firstDataRow) || firstDataRow < 1) throw new RangeError("firstDataRow harus bilangan bulat positif.");
   const issues: DataQualityIssue[] = [];
+  const mergedPlot = (rowNumber: number) => {
+    const matches = (options.plotCodeMerges ?? []).filter((merge) => Number.isSafeInteger(merge.startRow) && Number.isSafeInteger(merge.endRow) && merge.startRow >= firstDataRow && merge.endRow >= merge.startRow && rowNumber >= merge.startRow && rowNumber <= merge.endRow);
+    if (matches.length !== 1) return null;
+    const merge = matches[0];
+    const anchor = normalizePlotCode(rows[merge.startRow - firstDataRow]?.[2]);
+    if (anchor.state !== "valid") return null;
+    const start = merge.startRow - firstDataRow;
+    const end = Math.min(merge.endRow - firstDataRow + 1, rows.length);
+    if (rows.slice(start, end).some((row) => { const code = normalizePlotCode(row[2]); return code.state === "invalid" || (code.state === "valid" && code.value !== anchor.value); })) return null;
+    return { code: anchor.value, row: merge.startRow };
+  };
   const records = rows.map((raw, index): OverviewRecord => {
     const source = { worksheet: options.worksheetName ?? "Overview", row: firstDataRow + index };
+    const spkRanges = (options.spkMerges ?? []).filter((merge) => Number.isSafeInteger(merge.startRow) && Number.isSafeInteger(merge.endRow) && merge.startRow >= firstDataRow && merge.endRow >= merge.startRow && source.row >= merge.startRow && source.row <= merge.endRow);
+    const range = spkRanges[0];
+    const anchor = range ? parseSpkNumber(rows[range.startRow - firstDataRow]?.[1]) : null;
+    const ambiguous = spkRanges.length > 1 || Boolean(range && (anchor?.state !== "valid" || rows.slice(range.startRow - firstDataRow, range.endRow - firstDataRow + 1).some((row) => { const value = parseSpkNumber(row[1]); return value.state === "invalid" || (value.state === "valid" && value.value !== anchor?.value); })));
+    const originalSpk = parseSpkNumber(raw[1]);
+    const inheritedSpk = !ambiguous && range && anchor?.state === "valid" && originalSpk.state === "missing" ? { value: anchor.value, row: range.startRow } : null;
+    const originalPlot = normalizePlotCode(raw[2]);
+    const inheritedPlot = originalPlot.state === "missing" ? mergedPlot(source.row) : null;
     const cells = {
       no: parseOverviewNumber(raw[0], options.numberPolicy ?? "id-ID"),
-      plotCode: normalizePlotCode(raw[1]),
-      plotArea: parseOverviewNumber(raw[2], options.numberPolicy ?? "id-ID"),
-      totalFuelConsumption: parseOverviewNumber(raw[3], options.numberPolicy ?? "id-ID"),
-      date: parseOverviewDate(raw[4]),
-      hmStart: parseOverviewNumber(raw[5], options.numberPolicy ?? "id-ID"),
-      hmEnd: parseOverviewNumber(raw[6], options.numberPolicy ?? "id-ID"),
-      workingHours: parseOverviewNumber(raw[7], options.numberPolicy ?? "id-ID"),
-      estimatedWorkingHours: parseOverviewNumber(raw[8], options.numberPolicy ?? "id-ID"),
-      fuelRefill: parseOverviewNumber(raw[9], options.numberPolicy ?? "id-ID"),
-      fuelPerHour: parseOverviewNumber(raw[10], options.numberPolicy ?? "id-ID"),
-      actualFuelUsage: parseOverviewNumber(raw[11], options.numberPolicy ?? "id-ID"),
-      remainingFuel: parseOverviewNumber(raw[12], options.numberPolicy ?? "id-ID"),
-      workStatus: normalizeWorkStatus(raw[13]),
-      notes: parseNotes(raw[14]),
+      spkNumber: ambiguous ? { state: "invalid" as const, value: null } : inheritedSpk ? { state: "valid" as const, value: inheritedSpk.value } : originalSpk,
+      plotCode: inheritedPlot ? { state: "valid" as const, value: inheritedPlot.code } : originalPlot,
+      plotArea: parseOverviewNumber(raw[3], options.numberPolicy ?? "id-ID"),
+      totalFuelConsumption: parseOverviewNumber(raw[4], options.numberPolicy ?? "id-ID"),
+      date: parseOverviewDate(raw[5]),
+      hmStart: parseOverviewNumber(raw[6], options.numberPolicy ?? "id-ID"),
+      hmEnd: parseOverviewNumber(raw[7], options.numberPolicy ?? "id-ID"),
+      workingHours: parseOverviewNumber(raw[8], options.numberPolicy ?? "id-ID"),
+      estimatedWorkingHours: parseOverviewNumber(raw[9], options.numberPolicy ?? "id-ID"),
+      fuelRefill: parseOverviewNumber(raw[10], options.numberPolicy ?? "id-ID"),
+      fuelPerHour: parseOverviewNumber(raw[11], options.numberPolicy ?? "id-ID"),
+      actualFuelUsage: parseOverviewNumber(raw[12], options.numberPolicy ?? "id-ID"),
+      remainingFuel: parseOverviewNumber(raw[13], options.numberPolicy ?? "id-ID"),
+      workStatus: normalizeWorkStatus(raw[14]),
+      notes: parseNotes(raw[15]),
     };
     const cellStates = {} as Record<(typeof overviewColumns)[number]["field"], CellState>;
     for (const { field, header } of overviewColumns) {
       const { state } = cells[field];
       cellStates[field] = state;
-      if (state === "valid") continue;
+      if (state === "valid" || (field === "spkNumber" && (state === "missing" || ambiguous))) continue;
       const identity = field === "date" || field === "plotCode";
       issues.push({ source, field, severity: identity ? "error" : state === "invalid" ? "warning" : "info",
         code: state === "missing" ? "missing_value" : "invalid_value",
         message: `${header}: ${state === "missing" ? "nilai belum tersedia" : "format tidak valid"}.` });
     }
-    if (raw.length > 15) issues.push({ source, field: null, severity: "warning", code: "column_count", message: "Kolom setelah O tidak dipakai; baris mentah tetap disimpan." });
+    if (ambiguous) issues.push({ source, field: "spkNumber", severity: "warning", code: "metadata_conflict", message: "Nomor SPK pada rentang sel gabungan ambigu dan tidak digunakan.", relatedRows: spkRanges.map((merge) => merge.startRow) });
+    else if (cells.spkNumber.state === "missing" && cells.plotCode.state === "valid") issues.push({ source, field: "spkNumber", severity: "warning", code: "missing_value", message: "Nomor SPK belum tersedia; aktivitas tidak dikaitkan dengan SPK lain." });
+    if (raw.length > overviewColumns.length) issues.push({ source, field: null, severity: "warning", code: "column_count", message: "Kolom setelah P tidak dipakai; baris mentah tetap disimpan." });
     return {
-      no: cells.no.value, plotCode: cells.plotCode.value ?? "", plotArea: cells.plotArea.value,
+      no: cells.no.value, spkNumber: cells.spkNumber.value, plotCode: cells.plotCode.value ?? "", plotArea: cells.plotArea.value,
       totalFuelConsumption: cells.totalFuelConsumption.value, date: cells.date.value,
       hmStart: cells.hmStart.value, hmEnd: cells.hmEnd.value, workingHours: cells.workingHours.value,
       estimatedWorkingHours: cells.estimatedWorkingHours.value, fuelRefill: cells.fuelRefill.value,
       fuelPerHour: cells.fuelPerHour.value, actualFuelUsage: cells.actualFuelUsage.value,
       remainingFuel: cells.remainingFuel.value, workStatus: cells.workStatus.value, notes: cells.notes.value,
-      source, raw: [...raw], cellStates,
+      source, plotCodeSource: cells.plotCode.state === "valid" ? { worksheet: source.worksheet, row: inheritedPlot?.row ?? source.row } : null, spkSource: cells.spkNumber.state === "valid" ? { worksheet: source.worksheet, row: inheritedSpk?.row ?? source.row } : null, raw: [...raw], cellStates,
     };
   });
   return { records, issues };

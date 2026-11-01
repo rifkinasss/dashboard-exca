@@ -16,7 +16,7 @@ export function DataQuality({ issues, records }: { issues: DataQualityIssue[]; r
         <h2>Kualitas data · {issues.length} temuan</h2>
         <span className="panel-meta">Buka rincian</span>
       </summary>
-      <p className="table-footnote">Seluruh data sebelum filter. Nilai sumber disimpan; hanya metrik terkait yang dikecualikan. N/A dapat berarti belum terukur atau memerlukan tinjauan.</p>
+      <p className="table-footnote">Validasi sumber mencakup seluruh data; temuan target mengikuti bulan dan filter. Nilai sumber disimpan; hanya metrik terkait yang dikecualikan. N/A dapat berarti belum terukur atau memerlukan tinjauan.</p>
       <div className="quality-filters">
         <label>Tingkat <select value={filters.severity} onChange={(event) => setFilters({ ...filters, severity: event.target.value })}><option value="">Semua</option>{Object.entries(severityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>Petak <select value={filters.plot} onChange={(event) => setFilters({ ...filters, plot: event.target.value })}><option value="">Semua</option>{plots.map((code) => <option key={code}>{code}</option>)}</select></label>
@@ -34,8 +34,8 @@ export function DataQuality({ issues, records }: { issues: DataQualityIssue[]; r
               <tr key={`${issue.source.row}-${issue.code}-${index}`}>
                 <td>{severityLabels[issue.severity]}</td>
                 <th scope="row">{issue.source.worksheet}!{overviewColumns[columnIndex]?.column}{issue.source.row}</th>
-                <td>{value === null || value === undefined || value === "" ? "(kosong)" : String(value)}</td>
-                <td>{issue.message}{issue.relatedRows?.length ? ` Baris terkait: ${issue.relatedRows.join(", ")}.` : ""}</td>
+                <td>{issue.field === "remainingFuel" ? "(nilai disembunyikan)" : value === null || value === undefined || value === "" ? "(kosong)" : String(value)}</td>
+                <td>{issue.field === "remainingFuel" ? "Stok tangki: " : ""}{issue.message}{issue.relatedRows?.length ? ` Baris terkait: ${issue.relatedRows.join(", ")}.` : ""}</td>
               </tr>
             );
           })}</tbody>

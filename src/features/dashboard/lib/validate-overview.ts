@@ -34,11 +34,11 @@ export function validateOverview(records: readonly OverviewRecord[], options: Pr
         add("hm_mismatch", "workingHours", "HM kerja tidak sesuai selisih HM; nilai sumber tidak dikoreksi otomatis.", "warning");
       }
     }
-    // Include invalid raw cells so different parsing failures cannot collapse into one duplicate.
+    // SPK is descriptive and does not change the existing activity duplicate key.
     const fingerprint = JSON.stringify(overviewColumns.map(({ field }, index) =>
-      record.cellStates[field] === "invalid" ? ["invalid", typeof record.raw[index], String(record.raw[index])] : record[field]));
+      record.cellStates[field] === "invalid" ? ["invalid", typeof record.raw[index], String(record.raw[index])] : record[field]).filter((_, index) => overviewColumns[index].field !== "spkNumber"));
     const duplicateOf = fingerprints.get(fingerprint) ?? null;
-    if (duplicateOf !== null) issues.push({ source: record.source, field: null, code: "duplicate_record", severity: "warning", relatedRows: [duplicateOf], message: `Duplikat tepat dari baris ${duplicateOf}; hanya baris pertama masuk perhitungan.` });
+    if (duplicateOf !== null) issues.push({ source: record.source, field: null, code: "duplicate_record", severity: "warning", relatedRows: [duplicateOf], message: `Duplikat aktivitas dari baris ${duplicateOf} (tanpa membandingkan No. SPK); hanya baris pertama masuk perhitungan.` });
     else fingerprints.set(fingerprint, record.source.row);
     const efficiencyEligible = !invalidFields.includes("actualFuelUsage") && !invalidFields.includes("workingHours") && record.workingHours !== null && record.workingHours > 0;
     const hasMeasurement = record.actualFuelUsage !== null || record.workingHours !== null;

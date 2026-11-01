@@ -1,4 +1,4 @@
-import type { RawOverviewRow } from "../types";
+import type { PlotCodeMerge, RawOverviewRow } from "../types";
 
 export type SyncErrorCategory = "configuration" | "authentication" | "spreadsheet_not_found" |
   "permission_denied" | "api_disabled" | "worksheet_missing" | "headers_mismatch" |
@@ -19,5 +19,5 @@ export interface DataSourceStatus {
   ttlSeconds: number;
   error: SyncErrorInfo | null;
 }
-export type DashboardData = { kind: "ready"; rows: RawOverviewRow[]; status: DataSourceStatus } |
+export type DashboardData = { kind: "ready"; rows: RawOverviewRow[]; plotCodeMerges?: PlotCodeMerge[]; spkMerges?: PlotCodeMerge[]; status: DataSourceStatus } |
   { kind: "error"; status: DataSourceStatus };

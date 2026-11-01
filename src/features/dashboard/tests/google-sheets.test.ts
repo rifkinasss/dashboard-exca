@@ -14,15 +14,15 @@ const config: GoogleSheetsConfig = { source: "google-sheets", spreadsheetId: "sy
 const metadata = { properties: { locale: "id_ID", timeZone: "Asia/Makassar" }, sheets: [{ properties: { title: config.worksheet } }] };
 const snapshot = () => ({ rows: fixture, worksheet: config.worksheet });
 
-test("repository maps A–O without collapsing blank/partial rows or changing primitive cells", () => {
-  const input = { majorDimension: "ROWS", values: [headers, row(), [], [2, " PTK-02 ", "", null, "02/10/2026"]] };
+test("repository maps A–P without collapsing blank/partial rows or changing primitive cells", () => {
+  const input = { majorDimension: "ROWS", values: [headers, row(), [], [2, "SPK-002", " PTK-02 ", "", null, "02/10/2026"]] };
   const before = structuredClone(input);
   const rows = mapOverviewValues(input);
   assert.equal(rows.length, 3);
-  assert.equal(rows[1].length, 15);
-  assert.equal(rows[2][1], " PTK-02 ");
-  assert.equal(rows[2][2], "");
-  assert.equal(rows[2][14], null);
+  assert.equal(rows[1].length, 16);
+  assert.equal(rows[2][1], "SPK-002");
+  assert.equal(rows[2][2], " PTK-02 ");
+  assert.equal(rows[2][15], null);
   const view = buildDashboardViewModel(rows, defaultFilters, { worksheetName: config.worksheet });
   assert.equal(view.records[2].source.row, 4);
   assert.equal(view.records[2].source.worksheet, config.worksheet);
@@ -31,7 +31,7 @@ test("repository maps A–O without collapsing blank/partial rows or changing pr
 
 test("header validation accepts whitespace but rejects reordered, missing, or renamed columns", () => {
   assert.equal(mapOverviewValues({ values: [headers.map((header) => `  ${header}  `), row()] }).length, 1);
-  for (const altered of [[...headers.slice(1), headers[0]], headers.slice(0, 14), headers.map((header, index) => index === 9 ? "Changed" : header)]) {
+  for (const altered of [[...headers.slice(1), headers[0]], [headers[0], ...headers.slice(2)], headers.slice(0, 15), headers.map((header, index) => index === 9 ? "Changed" : header)]) {
     assert.throws(() => mapOverviewValues({ values: [altered, row()] }), (error: unknown) => error instanceof SheetsSyncError && error.info.category === "headers_mismatch");
   }
 });
@@ -45,14 +45,14 @@ test("empty worksheet, malformed payloads, objects and oversized rows fail expli
   }
 });
 
-test("API reads metadata then open-ended A:O using FORMATTED_VALUE and readonly scope", async () => {
+test("API reads metadata then open-ended A:P using FORMATTED_VALUE and readonly scope", async () => {
   const calls: { url: string; params: Record<string, string> }[] = [];
   const result = await readGoogleOverview(config, async (url, params) => {
     calls.push({ url, params });
     return calls.length === 1 ? metadata : { values: [headers, ...fixture] };
   });
   assert.equal(calls.length, 2);
-  assert.match(decodeURIComponent(calls[1].url), /'New Version Overview'!A:O$/);
+  assert.match(decodeURIComponent(calls[1].url), /'New Version Overview'!A:P$/);
   assert.equal(calls[1].params.valueRenderOption, "FORMATTED_VALUE");
   assert.equal(calls[1].params.majorDimension, "ROWS");
   assert.equal(sheetsReadScope, "https://www.googleapis.com/auth/spreadsheets.readonly");
@@ -70,7 +70,7 @@ test("worksheet names with apostrophes use escaped A1 notation", async () => {
   let count = 0;
   await readGoogleOverview(special, async (url) => {
     if (++count === 1) return { ...metadata, sheets: [{ properties: { title: special.worksheet } }] };
-    assert.match(decodeURIComponent(url), /'Area''s Overview'!A:O$/);
+    assert.match(decodeURIComponent(url), /'Area''s Overview'!A:P$/);
     return { values: [headers, row()] };
   });
 });
@@ -190,7 +190,48 @@ test("repository snapshots enter Phase 2 unchanged; local filtering never reload
 });
 
 test("live initial period handles leap months and does not force October demo dates", () => {
-  assert.deepEqual(filtersForPeriod("2024-02"), { startDate: "2024-02-01", endDate: "2024-02-29", plotCodes: [], statuses: [] });
+  assert.deepEqual(filtersForPeriod("2024-02"), { startDate: "2024-02-01", endDate: "2024-02-29", plotCodes: [], selectedSpkNumbers: [], statuses: [] });
   assert.equal(filtersForPeriod("2026-04").endDate, "2026-04-30");
   assert.throws(() => filtersForPeriod("2026-13"), RangeError);
+});
+
+test("only explicit single-column plot merges are passed through with source rows", async () => {
+  const merges = [
+    { startColumnIndex: 2, endColumnIndex: 3, startRowIndex: 1, endRowIndex: 3 },
+    { startColumnIndex: 1, endColumnIndex: 2, startRowIndex: 1, endRowIndex: 3 },
+    { startColumnIndex: 1, endColumnIndex: 3, startRowIndex: 3, endRowIndex: 5 },
+    { startColumnIndex: 2, endColumnIndex: 3, startRowIndex: 0, endRowIndex: 2 },
+  ];
+  let count = 0;
+  const result = await readGoogleOverview(config, async (_url, params) => {
+    if (++count === 1) {
+      assert.match(params.fields, /merges/);
+      return { ...metadata, sheets: [{ properties: { title: config.worksheet }, merges }] };
+    }
+    return { values: [headers, row(), row({ no: 2, plotCode: "", spkNumber: "", date: "02/10/2026" })] };
+  });
+  assert.deepEqual(result.plotCodeMerges, [{ startRow: 2, endRow: 3 }]);
+  assert.deepEqual(result.spkMerges, [{ startRow: 2, endRow: 3 }]);
+  assert.equal(result.rows[1][2], "");
+  const view = buildDashboardViewModel(result.rows, { ...defaultFilters, startDate: "", endDate: "" }, { worksheetName: config.worksheet, plotCodeMerges: result.plotCodeMerges, spkMerges: result.spkMerges });
+  assert.equal(view.filteredRecords.length, 2);
+  assert.equal(view.summary.totals.fuel, 200);
+  assert.equal(view.records[1].plotCode, "PTK-01");
+  assert.equal(view.records[1].raw[2], "");
+  assert.equal(view.records[1].spkNumber, "SPK-001");
+  assert.deepEqual(view.records[1].spkSource, { worksheet: config.worksheet, row: 2 });
+  assert.deepEqual(view.records[1].plotCodeSource, { worksheet: config.worksheet, row: 2 });
+  assert.equal(view.records[1].source.row, 3);
+});
+
+test("unconfirmed or conflicting plot merges cannot assign a code", () => {
+  const rows = [row({ plotCode: "A" }), row({ no: 2, plotCode: "", date: "02/10/2026" }), row({ no: 3, plotCode: "B", date: "03/10/2026" })];
+  const filters = { ...defaultFilters, startDate: "", endDate: "" };
+  const unconfirmed = buildDashboardViewModel(rows, filters);
+  assert.equal(unconfirmed.records[1].plotCode, "");
+  const conflict = buildDashboardViewModel(rows, filters, { plotCodeMerges: [{ startRow: 2, endRow: 4 }] });
+  assert.equal(conflict.records[1].plotCode, "");
+  assert.equal(conflict.records[2].plotCode, "B");
+  const overlap = buildDashboardViewModel(rows, filters, { plotCodeMerges: [{ startRow: 2, endRow: 3 }, { startRow: 2, endRow: 4 }] });
+  assert.equal(overlap.records[1].plotCode, "");
 });

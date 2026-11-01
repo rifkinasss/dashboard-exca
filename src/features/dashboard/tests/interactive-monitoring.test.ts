@@ -4,7 +4,7 @@ import { buildDashboardViewModel } from "../lib/build-dashboard-view-model";
 import { filterQuality, monitoringTrend, plotDetails, readFilters, writeFilters } from "../lib/interactive-monitoring";
 import { row } from "./fixtures";
 
-const all = { startDate: "", endDate: "", plotCodes: [] as string[], statuses: [] };
+const all = { startDate: "", endDate: "", plotCodes: [] as string[], selectedSpkNumbers: [] as string[], statuses: [] };
 const rows = [
   row({ no: 1, plotCode: "A/1", date: "01/10/2026", workStatus: "Mulai Garap Petak" }),
   row({ no: 2, plotCode: "A/1", date: "03/10/2026", workStatus: "Garap Petak Berlangsung", actualFuelUsage: 0, workingHours: 0, hmStart: 0, hmEnd: 0 }),
@@ -14,7 +14,7 @@ const rows = [
 ];
 
 test("filter URLs round trip combined selections and preserve unrelated parameters", () => {
-  const filters = { startDate: "2026-10-01", endDate: "2026-10-03", plotCodes: ["A/1", "B"], statuses: ["Dalam pengerjaan" as const] };
+  const filters = { startDate: "2026-10-01", endDate: "2026-10-03", plotCodes: ["A/1", "B"], selectedSpkNumbers: [], statuses: ["Dalam pengerjaan" as const] };
   const query = writeFilters("?other=kept&plot=old", filters);
   assert.equal(new URLSearchParams(query).get("other"), "kept");
   assert.deepEqual(readFilters(query, all), filters);

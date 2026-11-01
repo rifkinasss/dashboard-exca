@@ -1,7 +1,7 @@
 import nextEnv from "@next/env";
-import source from "../.test-build/data/server/dashboard-source.js";
-import engine from "../.test-build/lib/build-dashboard-view-model.js";
-import filters from "../.test-build/lib/overview.js";
+import source from "../.test-build/dashboard/data/server/dashboard-source.js";
+import engine from "../.test-build/dashboard/lib/build-dashboard-view-model.js";
+import filters from "../.test-build/dashboard/lib/overview.js";
 
 nextEnv.loadEnvConfig(process.cwd());
 const data = await source.getDashboardData();
@@ -12,10 +12,10 @@ if (data.status.source !== "google-sheets") {
   console.log(JSON.stringify({ liveVerification: "FAILED", status: data.status }, null, 2));
   process.exitCode = 1;
 } else {
-  const view = engine.buildDashboardViewModel(data.rows, { ...filters.defaultFilters, startDate: "", endDate: "" }, { worksheetName: data.status.worksheet ?? "Overview" });
+  const view = engine.buildDashboardViewModel(data.rows, { ...filters.defaultFilters, startDate: "", endDate: "" }, { worksheetName: data.status.worksheet ?? "Overview", plotCodeMerges: data.plotCodeMerges, spkMerges: data.spkMerges });
   const problematic = new Set(view.issues.filter((issue) => issue.severity !== "info").map((issue) => issue.source.row));
   const periods = Object.fromEntries(view.periods.map((period) => {
-    const periodView = engine.buildDashboardViewModel(data.rows, filters.filtersForPeriod(period), { worksheetName: data.status.worksheet ?? "Overview" });
+    const periodView = engine.buildDashboardViewModel(data.rows, filters.filtersForPeriod(period), { worksheetName: data.status.worksheet ?? "Overview", plotCodeMerges: data.plotCodeMerges, spkMerges: data.spkMerges });
     return [period, { activePlotCodes: periodView.summary.plots.map((plot) => plot.code), activityRows: periodView.filteredRecords.length, kpis: periodView.summary.totals }];
   }));
   console.log(JSON.stringify({
@@ -30,6 +30,12 @@ if (data.status.source !== "google-sheets") {
     issuesByCode: Object.fromEntries([...Map.groupBy(view.issues, (issue) => issue.code)].map(([code, issues]) => [code, issues.length])),
     issuesByCodeAndField: Object.fromEntries([...Map.groupBy(view.issues, (issue) => `${issue.code}:${issue.field ?? "row"}`)].map(([code, issues]) => [code, issues.length])),
     registeredPlotCodes: view.plotCodes,
+    spkOptions: view.spkOptions,
+    spkMergeCount: data.spkMerges?.length ?? 0,
+    spkScopes: view.spkOptions.map(({ number }) => {
+      const scoped = engine.buildDashboardViewModel(data.rows, { ...filters.defaultFilters, startDate: "", endDate: "", selectedSpkNumbers: [number] }, { worksheetName: data.status.worksheet ?? "Overview", plotCodeMerges: data.plotCodeMerges, spkMerges: data.spkMerges });
+      return { number, activityRows: scoped.filteredRecords.length, plots: scoped.summary.plots.map((plot) => plot.code), fuel: scoped.summary.totals.fuel };
+    }),
     plotsWithoutDatedActivity: view.inventory.filter((plot) => !plot.hasActivity).map((plot) => plot.code),
     plotMetadata: view.inventory.map((plot) => ({ code: plot.code, area: plot.areaMetadata, cumulativeFuel: plot.cumulativeFuelMetadata })),
     dashboardPeriod: "Semua tanggal",

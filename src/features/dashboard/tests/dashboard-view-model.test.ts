@@ -97,8 +97,8 @@ test("raw inputs are not mutated and normalized raw snapshots are independent", 
   assert.deepEqual(input, before);
   const mutable = [...row()];
   const view = buildDashboardViewModel([mutable]);
-  mutable[11] = 99999;
-  assert.equal(view.records[0].raw[11], 100);
+  mutable[12] = 99999;
+  assert.equal(view.records[0].raw[12], 100);
 });
 
 test("timezone display preserves date-only calendar values in Asia/Makassar", () => {

@@ -8,12 +8,12 @@ const messages: Record<SyncErrorCategory, [string, string]> = {
   permission_denied: ["Service account tidak memiliki izin membaca spreadsheet.", "Periksa akses Viewer pada spreadsheet dan kebijakan Google Cloud/Workspace."],
   api_disabled: ["Google Sheets API belum aktif untuk project service account.", "Aktifkan Google Sheets API pada project yang sesuai."],
   worksheet_missing: ["Worksheet yang dikonfigurasi tidak ditemukan.", "Periksa GOOGLE_SHEET_NAME; tidak ada worksheet pengganti yang dipilih otomatis."],
-  headers_mismatch: ["Header A–O tidak sesuai kontrak Phase 2.", "Bandingkan header dan posisi kolom dengan kontrak; kolom tidak diurutkan ulang otomatis."],
+  headers_mismatch: ["Header A–P tidak sesuai kontrak worksheet.", "Bandingkan header dan posisi kolom dengan kontrak; kolom tidak diurutkan ulang otomatis."],
   empty_worksheet: ["Worksheet belum berisi data aktivitas.", "Periksa worksheet dan header; tidak ada data demo yang digunakan sebagai pengganti."],
   rate_limit: ["Google membatasi permintaan sementara.", "Tunggu interval cache berikutnya dan periksa kuota Sheets API jika berulang."],
   network: ["Koneksi ke Google gagal atau melewati batas waktu.", "Periksa DNS, koneksi jaringan, dan akses HTTPS ke endpoint Google."],
   source_format: ["Format sumber belum cocok dengan parser Indonesia Phase 2.", "Periksa locale spreadsheet dan format angka/tanggal sebelum menambahkan mapping yang teruji."],
-  malformed_response: ["Struktur respons worksheet tidak valid.", "Periksa bentuk baris A–O; hanya sel primitif yang diterima."],
+  malformed_response: ["Struktur respons worksheet tidak valid.", "Periksa bentuk baris A–P; hanya sel primitif yang diterima."],
   upstream: ["Google Sheets belum dapat dibaca karena gangguan layanan.", "Coba lagi setelah interval cache; periksa status layanan bila berulang."],
 };
 export class SheetsSyncError extends Error {

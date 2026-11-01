@@ -19,7 +19,7 @@ export function createDashboardSource(config: DashboardSourceConfig, load?: () =
       worksheet: config.worksheet, lastSuccessAt: cached ? new Date(cached.at).toISOString() : null,
       evaluatedAt: new Date(now()).toISOString(), ttlSeconds: config.ttlSeconds, error: failure?.error ?? null,
     };
-    return cached ? { kind: "ready", rows: cached.value.rows, status } : { kind: "error", status };
+    return cached ? { kind: "ready", rows: cached.value.rows, plotCodeMerges: cached.value.plotCodeMerges ?? [], spkMerges: cached.value.spkMerges ?? [], status } : { kind: "error", status };
   };
   return async () => {
     if (cached && now() - cached.at < config.ttlSeconds * 1000) return result();

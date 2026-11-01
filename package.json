@@ -8,8 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "tsc -p tsconfig.test.json && node --conditions=react-server --test .test-build/tests/*.test.js",
-    "verify:sheets": "tsc -p tsconfig.test.json && node --conditions=react-server scripts/verify-sheets.mjs"
+    "test": "tsc -p tsconfig.test.json && node --conditions=react-server --test .test-build/dashboard/tests/*.test.js",
+    "verify:sheets": "tsc -p tsconfig.test.json && node --conditions=react-server scripts/verify-sheets.mjs",
+    "verify:finance": "tsc -p tsconfig.test.json && node --conditions=react-server scripts/verify-finance.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

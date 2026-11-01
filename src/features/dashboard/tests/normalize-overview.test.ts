@@ -43,13 +43,13 @@ test("plot and known status normalization is conservative", () => {
   assert.equal(normalizeWorkStatus("Other status").state, "invalid");
 });
 
-test("all 15 columns map to canonical fields with source rows and cell states", () => {
-  assert.equal(overviewColumns.length, 15);
-  assert.equal(overviewColumns.map((column) => column.column).join(""), "ABCDEFGHIJKLMNO");
+test("all 16 columns map to canonical fields with source rows and cell states", () => {
+  assert.equal(overviewColumns.length, 16);
+  assert.equal(overviewColumns.map((column) => column.column).join(""), "ABCDEFGHIJKLMNOP");
   const raw = row({ no: "", actualFuelUsage: "bad", fuelRefill: "0" });
   const result = normalizeOverview([raw], { firstDataRow: 25 });
   const record = result.records[0];
-  const expected = [null, "PTK-01", 4.8, 9999, "2026-10-01", 100, 110, 10, 65, 0, 999, null, 80, "Dalam pengerjaan", "Fixture sintetis"];
+  const expected = [null, "SPK-001", "PTK-01", 4.8, 9999, "2026-10-01", 100, 110, 10, 65, 0, 999, null, 80, "Dalam pengerjaan", "Fixture sintetis"];
   assert.deepEqual(overviewColumns.map(({ field }) => record[field]), expected);
   assert.deepEqual(record.source, { worksheet: "Overview", row: 25 });
   assert.equal(record.cellStates.no, "missing");
@@ -65,7 +65,18 @@ test("truncated and extended rows remain traceable; source row configuration is 
   assert.equal(short.records[0].plotCode, "");
   assert.ok(short.issues.some((issue) => issue.field === "plotCode" && issue.severity === "error"));
   const extended = normalizeOverview([[...row(), "extra"]]);
-  assert.equal(extended.records[0].raw.length, 16);
+  assert.equal(extended.records[0].raw.length, 17);
   assert.ok(extended.issues.some((issue) => issue.code === "column_count"));
   assert.throws(() => normalizeOverview([], { firstDataRow: 0 }), RangeError);
+});
+
+test("SPK identifiers preserve text and missing SPK does not exclude activities", () => {
+  const input = [row({ spkNumber: " 001/SPK-A ", plotCode: "A" }), row({ no: 2, spkNumber: "", plotCode: "B" }), row({ no: 3, spkNumber: 123, plotCode: "C" }), row({ no: 4, spkNumber: true, plotCode: "D" })];
+  const { records, issues } = normalizeOverview(input, { worksheetName: "Fixture" });
+  assert.deepEqual(records.map((record) => record.spkNumber), ["001/SPK-A", null, "123", null]);
+  assert.equal(records[0].raw[1], " 001/SPK-A ");
+  assert.equal(records[0].source.row, 2);
+  assert.equal(records[1].cellStates.spkNumber, "missing");
+  assert.ok(issues.some((issue) => issue.source.row === 3 && issue.field === "spkNumber" && issue.code === "missing_value"));
+  assert.ok(issues.some((issue) => issue.source.row === 5 && issue.field === "spkNumber" && issue.code === "invalid_value"));
 });

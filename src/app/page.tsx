@@ -1,24 +1,12 @@
-import { Suspense } from "react";
 import { connection } from "next/server";
-import { Dashboard } from "@/features/dashboard/components/dashboard";
-import { SourceStatus } from "@/features/dashboard/components/source-status";
-import { getDashboardData } from "@/features/dashboard/data/server/dashboard-source";
-import { defaultFilters } from "@/features/dashboard/lib/overview";
-import Loading from "./loading";
+import { redirect } from "next/navigation";
+import { dashboardHref, dashboardPaths } from "@/features/dashboard/lib/dashboard-navigation";
 
-async function DashboardContent() {
+export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await connection();
-  const [data] = await Promise.all([
-    getDashboardData(),
-    new Promise<void>((resolve) => setTimeout(resolve, 5000)),
-  ]);
-  if (data.kind === "error") {
-    return <main className="route-state"><h1>Sinkronisasi dashboard gagal</h1><SourceStatus status={data.status} /></main>;
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) params.append(key, item);
   }
-  const initialFilters = { ...defaultFilters, startDate: "", endDate: "" };
-  return <Dashboard rows={data.rows} status={data.status} initialFilters={initialFilters} />;
-}
-
-export default function Home() {
-  return <Suspense fallback={<Loading />}><DashboardContent /></Suspense>;
+  redirect(dashboardHref(dashboardPaths.operasional, params.toString(), true));
 }

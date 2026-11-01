@@ -34,7 +34,7 @@ test("five registered plots remain available when November has only one active p
   assert.equal(buildDashboardViewModel(rows, all).summary.totals.fuel, 600);
 });
 
-test("merged C/D candidates retain provenance without rewriting later activity or summing D", () => {
+test("merged D/E candidates retain provenance without rewriting later activity or summing E", () => {
   const view = buildDashboardViewModel(rows, filtersForPeriod("2026-11"), { worksheetName: "Fixture" });
   const plot = view.inventory.find((item) => item.code === "SYN-E")!;
   assert.equal(plot.area, 5.5);
@@ -43,7 +43,7 @@ test("merged C/D candidates retain provenance without rewriting later activity o
   assert.deepEqual(plot.cumulativeFuelMetadata, { value: 500, sourceRows: [{ worksheet: "Fixture", row: 6 }], requiresReview: false });
   assert.equal(view.filteredRecords[0].plotArea, null);
   assert.equal(view.filteredRecords[0].totalFuelConsumption, null);
-  assert.equal(view.filteredRecords[0].raw[2], "");
+  assert.equal(view.filteredRecords[0].raw[3], "");
   assert.equal(view.filteredRecords[0].source.row, 7);
   assert.ok(!view.issues.some((issue) => issue.source.row === 7 && issue.code === "missing_value" && (issue.field === "plotArea" || issue.field === "totalFuelConsumption")));
   assert.equal(view.summary.totals.fuel, 100);

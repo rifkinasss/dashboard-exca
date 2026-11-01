@@ -1,5 +1,7 @@
 # Phase 3: Google Sheets integration
 
+> Dokumen ini mencatat kontrak dan pengujian sebelum penambahan No. SPK. Kontrak terbaru tersedia di [pembaruan 31 Oktober](google-sheets-spk-2026-10-31.md).
+
 > Catatan historis: hasil dan perilaku periode/status di bawah mencatat verifikasi Phase 3 pada 29 Oktober 2026. Lihat [laporan inventaris terbaru](plot-inventory-2026-10-30.md) untuk perubahan dan verifikasi 30 Oktober.
 
 Status terbaru: **live read, pipeline Phase 2, dan payload/SSR dashboard terverifikasi**. Google Sheets API sudah diaktifkan oleh pengguna. Verifikasi ini tidak mengubah business logic Phase 2 atau spreadsheet. Validasi visual/interaksi browser tetap belum dilakukan.

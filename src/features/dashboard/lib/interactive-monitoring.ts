@@ -10,18 +10,25 @@ export function readFilters(search: string, defaults: DashboardFilters): Dashboa
   return {
     startDate: date("start", defaults.startDate), endDate: date("end", defaults.endDate),
     plotCodes: params.has("plot") ? [...new Set(params.getAll("plot").filter(Boolean))] : defaults.plotCodes,
+    selectedSpkNumbers: params.has("spk") ? [...new Set(params.getAll("spk").filter(Boolean))] : defaults.selectedSpkNumbers,
     statuses: params.has("status") ? [...new Set(params.getAll("status").filter((s): s is WorkStatus => workStatuses.includes(s as WorkStatus)))] : defaults.statuses,
   };
 }
 
 export function writeFilters(search: string, filters: DashboardFilters): string {
   const params = new URLSearchParams(search);
-  for (const key of ["start", "end", "plot", "status"]) params.delete(key);
+  for (const key of ["start", "end", "plot", "spk", "status"]) params.delete(key);
   if (filters.startDate) params.set("start", filters.startDate);
   if (filters.endDate) params.set("end", filters.endDate);
   filters.plotCodes.forEach((code) => params.append("plot", code));
+  filters.selectedSpkNumbers.forEach((number) => params.append("spk", number));
   filters.statuses.forEach((status) => params.append("status", status));
   return params.toString();
+}
+
+export function searchSpkOptions(options: readonly { number: string; plots: string[] }[], query: string) {
+  const term = query.trim().toLocaleLowerCase("id-ID");
+  return options.filter((option) => [option.number, ...option.plots].some((value) => value.toLocaleLowerCase("id-ID").includes(term)));
 }
 
 export function monitoringTrend(rows: readonly ValidatedOverviewRecord[], interval: "daily" | "weekly") {

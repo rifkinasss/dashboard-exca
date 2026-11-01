@@ -33,7 +33,7 @@ export function PlotSummary({ plots, showAll, onShowAllChange, startDate, endDat
             <TableHead scope="col">Status Pekerjaan</TableHead><TableHead scope="col">Aktivitas periode</TableHead>
           </TableRow></TableHeader>
           <TableBody>{visible.map((plot) => {
-            const sources = plot.areaMetadata.sourceRows.map((source) => `${source.worksheet}!C${source.row}`).join(", ");
+            const sources = plot.areaMetadata.sourceRows.map((source) => `${source.worksheet}!D${source.row}`).join(", ");
             const areaNote = `${plot.areaRequiresReview ? "Luas perlu ditinjau. " : ""}${sources ? `Sumber: ${sources}` : "Sumber luas belum tersedia"}`;
             const activity = plot.includedActivity ? "Ada aktivitas" : plot.hasActivity ? "Tidak cocok filter status" : "Tidak ada aktivitas";
             return <TableRow key={plot.code}>

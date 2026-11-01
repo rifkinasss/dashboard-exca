@@ -3,7 +3,7 @@ import { normalizeOverview } from "../lib/normalize-overview";
 import { validateOverview } from "../lib/validate-overview";
 
 export function row(overrides: Partial<Record<OverviewField, RawCell>> = {}): RawOverviewRow {
-  const baseline: RawOverviewRow = [7, "PTK-01", "4,8", 9999, "01/10/2026", 100, 110, 10, 65, 120, 999, 100, 80, "Dalam pengerjaan", "Fixture sintetis"];
+  const baseline: RawOverviewRow = [7, "SPK-001", "PTK-01", "4,8", 9999, "01/10/2026", 100, 110, 10, 65, 120, 999, 100, 80, "Dalam pengerjaan", "Fixture sintetis"];
   return overviewColumns.map(({ field }, index) => Object.hasOwn(overrides, field) ? overrides[field] : baseline[index]);
 }
 

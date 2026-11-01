@@ -10,7 +10,7 @@ test("negative domain values are preserved and excluded only from related metric
   const result = prepare([raw]);
   assert.deepEqual(result.issues.filter((issue) => issue.code === "negative_value").map((issue) => issue.field).sort(), ["actualFuelUsage", "fuelRefill", "plotArea", "workingHours"]);
   assert.equal(result.records[0].record.fuelRefill, -25);
-  assert.equal(result.records[0].record.raw[9], -25);
+  assert.equal(result.records[0].record.raw[10], -25);
   assert.equal(result.records[0].efficiencyEligible, false);
   const totals = buildDashboardViewModel([row({ fuelRefill: -5 })]).summary.totals;
   assert.equal(totals.refill, null);
@@ -37,7 +37,7 @@ test("conflicting areas are flagged across the source, even in a narrower date v
   const input = [row(), row({ date: "02/10/2026", plotArea: "5,0" })];
   const result = prepare(input);
   assert.equal(result.issues.filter((issue) => issue.code === "area_conflict").length, 2);
-  const view = buildDashboardViewModel(input, { startDate: "2026-10-01", endDate: "2026-10-01", plotCodes: [], statuses: [] });
+  const view = buildDashboardViewModel(input, { startDate: "2026-10-01", endDate: "2026-10-01", plotCodes: [], selectedSpkNumbers: [], statuses: [] });
   assert.equal(view.summary.plots[0].area, null);
   assert.equal(view.summary.plots[0].areaRequiresReview, true);
   assert.equal(view.summary.totals.area, null);
@@ -86,4 +86,11 @@ test("validation leaves normalized records and raw input untouched", () => {
   Object.freeze(record);
   validateOverview(Object.freeze([record]));
   assert.deepEqual(record, before);
+});
+
+test("SPK metadata does not change existing activity duplicate detection", () => {
+  const first = row({ spkNumber: "SPK-A" });
+  const second = row({ spkNumber: "SPK-B" });
+  const { records } = prepare([first, second]);
+  assert.equal(records[1].duplicateOf, 2);
 });

@@ -23,7 +23,7 @@ export function buildPlotInventory(records: readonly ValidatedOverviewRecord[], 
   return [...Map.groupBy(inventoryRows, (row) => row.record.plotCode)].map(([code, rows]) => {
     const areaMetadata = metadata(rows, "plotArea");
     const cumulativeFuelMetadata = metadata(rows, "totalFuelConsumption");
-    const history = rows.filter((row) => row.duplicateOf === null).map((row) => row.record).filter((row) => validRange && validDate(row.date) && (!filters.endDate || row.date <= filters.endDate));
+    const history = rows.filter((row) => row.duplicateOf === null).map((row) => row.record).filter((row) => validRange && validDate(row.date) && (!filters.endDate || row.date <= filters.endDate) && (!filters.selectedSpkNumbers.length || (row.spkNumber !== null && filters.selectedSpkNumbers.includes(row.spkNumber))));
     const status = deriveWorkStatus(history, sheetOrderConfirmed);
     const period = periodByCode.get(code);
     return {
