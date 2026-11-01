@@ -1,0 +1,1793 @@
+{
+  "errors": [],
+  "results": [
+    {
+      "width": 1440,
+      "name": "desktop",
+      "fonts": "loaded",
+      "documentWidth": 1440,
+      "filterOpen": true,
+      "cards": [
+        {
+          "height": 144,
+          "top": 570
+        },
+        {
+          "height": 144,
+          "top": 570
+        },
+        {
+          "height": 144,
+          "top": 570
+        },
+        {
+          "height": 144,
+          "top": 570
+        },
+        {
+          "height": 144,
+          "top": 570
+        },
+        {
+          "height": 144,
+          "top": 570
+        }
+      ],
+      "chartHeaders": [
+        {
+          "top": 799,
+          "height": 337,
+          "empty": false
+        },
+        {
+          "top": 799,
+          "height": 337,
+          "empty": true
+        },
+        {
+          "top": 1148,
+          "height": 337,
+          "empty": false
+        },
+        {
+          "top": 1148,
+          "height": 337,
+          "empty": true
+        }
+      ],
+      "trace": [
+        {
+          "at": 0,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1035.248779296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 928,
+                "top": 873.34375,
+                "width": 881,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 927.65625,
+                "top": 873.34375,
+                "width": 880.65625,
+                "height": 210
+              },
+              "viewBox": "0 0 881 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "881",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1396.54443359375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "viewBox": "0 0 648 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "648",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 20,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1035.248779296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 928,
+                "top": 873.34375,
+                "width": 881,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 927.65625,
+                "top": 873.34375,
+                "width": 880.65625,
+                "height": 210
+              },
+              "viewBox": "0 0 881 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "881",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1396.54443359375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "viewBox": "0 0 648 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "648",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 54,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1035.248779296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 928,
+                "top": 873.34375,
+                "width": 881,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 927.65625,
+                "top": 873.34375,
+                "width": 880.65625,
+                "height": 210
+              },
+              "viewBox": "0 0 881 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "881",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1396.54443359375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "viewBox": "0 0 648 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "648",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 87,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1035.248779296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 928,
+                "top": 873.34375,
+                "width": 881,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 927.65625,
+                "top": 873.34375,
+                "width": 880.65625,
+                "height": 210
+              },
+              "viewBox": "0 0 881 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "881",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1396.54443359375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "viewBox": "0 0 648 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "648",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 120,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1035.248779296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 928,
+                "top": 873.34375,
+                "width": 881,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 927.65625,
+                "top": 873.34375,
+                "width": 880.65625,
+                "height": 210
+              },
+              "viewBox": "0 0 881 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "881",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1396.54443359375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "viewBox": "0 0 648 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "648",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 520,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1035.248779296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 928,
+                "top": 873.34375,
+                "width": 881,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 927.65625,
+                "top": 873.34375,
+                "width": 880.65625,
+                "height": 210
+              },
+              "viewBox": "0 0 881 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "881",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1396.54443359375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "viewBox": "0 0 648 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "648",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 1820,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1035.248779296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 928,
+                "top": 873.34375,
+                "width": 881,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 927.65625,
+                "top": 873.34375,
+                "width": 880.65625,
+                "height": 210
+              },
+              "viewBox": "0 0 881 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "881",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1396.54443359375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 695,
+                "top": 1222.734375,
+                "width": 648,
+                "height": 210
+              },
+              "viewBox": "0 0 648 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "648",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "name": "tablet",
+      "fonts": "loaded",
+      "documentWidth": 768,
+      "filterOpen": true,
+      "cards": [
+        {
+          "height": 144,
+          "top": 704
+        },
+        {
+          "height": 144,
+          "top": 704
+        },
+        {
+          "height": 144,
+          "top": 704
+        },
+        {
+          "height": 144,
+          "top": 860
+        },
+        {
+          "height": 144,
+          "top": 860
+        },
+        {
+          "height": 144,
+          "top": 860
+        }
+      ],
+      "chartHeaders": [
+        {
+          "top": 1088,
+          "height": 357,
+          "empty": false
+        },
+        {
+          "top": 1088,
+          "height": 357,
+          "empty": true
+        },
+        {
+          "top": 1457,
+          "height": 354,
+          "empty": false
+        },
+        {
+          "top": 1457,
+          "height": 354,
+          "empty": true
+        }
+      ],
+      "trace": [
+        {
+          "at": 0,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1344.358154296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1705.65380859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 21,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1344.358154296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1705.65380859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 55,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1344.358154296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1705.65380859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 89,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1344.358154296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1705.65380859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 122,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1344.358154296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1705.65380859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 522,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1344.358154296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1705.65380859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 1822,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 87.3125,
+                "right": 102,
+                "top": 1344.358154296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 161.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1182.453125,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            },
+            {
+              "text": {
+                "left": 127.65625,
+                "right": 142.34375,
+                "top": 1705.65380859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 173.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "container": {
+                "left": 47,
+                "right": 359,
+                "top": 1531.84375,
+                "width": 312,
+                "height": 210
+              },
+              "viewBox": "0 0 312 210",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "312",
+                "height": "210"
+              }
+            }
+          ],
+          "animations": 0
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "name": "mobile",
+      "fonts": "loaded",
+      "documentWidth": 390,
+      "filterOpen": false,
+      "cards": [
+        {
+          "height": 154,
+          "top": 686
+        },
+        {
+          "height": 154,
+          "top": 686
+        },
+        {
+          "height": 154,
+          "top": 850
+        },
+        {
+          "height": 154,
+          "top": 850
+        },
+        {
+          "height": 154,
+          "top": 1013
+        },
+        {
+          "height": 154,
+          "top": 1013
+        }
+      ],
+      "chartHeaders": [
+        {
+          "top": 1272,
+          "height": 324,
+          "empty": false
+        },
+        {
+          "top": 1608,
+          "height": 284,
+          "empty": true
+        },
+        {
+          "top": 1904,
+          "height": 304,
+          "empty": false
+        },
+        {
+          "top": 2221,
+          "height": 281,
+          "empty": true
+        }
+      ],
+      "trace": [
+        {
+          "at": 0,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 67.3125,
+                "right": 82,
+                "top": 1498.217529296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 136.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            },
+            {
+              "text": {
+                "left": 107.65625,
+                "right": 122.34375,
+                "top": 2122.49755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 148.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            }
+          ],
+          "animations": 1
+        },
+        {
+          "at": 19,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 67.3125,
+                "right": 82,
+                "top": 1498.217529296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 136.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            },
+            {
+              "text": {
+                "left": 107.65625,
+                "right": 122.34375,
+                "top": 2122.49755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 148.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            }
+          ],
+          "animations": 1
+        },
+        {
+          "at": 52,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 67.3125,
+                "right": 82,
+                "top": 1498.217529296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 136.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            },
+            {
+              "text": {
+                "left": 107.65625,
+                "right": 122.34375,
+                "top": 2122.49755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 148.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            }
+          ],
+          "animations": 1
+        },
+        {
+          "at": 85,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 67.3125,
+                "right": 82,
+                "top": 1498.217529296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 136.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            },
+            {
+              "text": {
+                "left": 107.65625,
+                "right": 122.34375,
+                "top": 2122.49755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 148.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            }
+          ],
+          "animations": 1
+        },
+        {
+          "at": 119,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 67.3125,
+                "right": 82,
+                "top": 1498.217529296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 136.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            },
+            {
+              "text": {
+                "left": 107.65625,
+                "right": 122.34375,
+                "top": 2122.49755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 148.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            }
+          ],
+          "animations": 1
+        },
+        {
+          "at": 519,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 67.3125,
+                "right": 82,
+                "top": 1498.217529296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 136.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            },
+            {
+              "text": {
+                "left": 107.65625,
+                "right": 122.34375,
+                "top": 2122.49755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 148.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            }
+          ],
+          "animations": 0
+        },
+        {
+          "at": 1819,
+          "fonts": "loaded",
+          "items": [
+            {
+              "text": {
+                "left": 67.3125,
+                "right": 82,
+                "top": 1498.217529296875,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 40.3125,
+                "y": 136.90499877929688,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1361.3125,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            },
+            {
+              "text": {
+                "left": 107.65625,
+                "right": 122.34375,
+                "top": 2122.49755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "bbox": {
+                "x": 80.65625,
+                "y": 148.80999755859375,
+                "width": 14.6875,
+                "height": 12.31494140625
+              },
+              "svg": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "container": {
+                "left": 27,
+                "right": 363,
+                "top": 1973.6875,
+                "width": 336,
+                "height": 185
+              },
+              "viewBox": "0 0 336 185",
+              "font": "Arial, Helvetica, sans-serif",
+              "svgSize": {
+                "width": "336",
+                "height": "185"
+              }
+            }
+          ],
+          "animations": 0
+        }
+      ]
+    }
+  ]
+}
