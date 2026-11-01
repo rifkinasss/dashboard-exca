@@ -120,6 +120,7 @@ export function Dashboard({
         <Charts
           summary={summary}
           rows={view.filteredValidatedRecords}
+          inventory={view.inventory}
           summaryPanel={
             <PlotSummary
               plots={view.visibleInventory}

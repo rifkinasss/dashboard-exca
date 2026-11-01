@@ -14,7 +14,7 @@ export function validateOverview(records: readonly OverviewRecord[], options: Pr
         if (record.cellStates[field] !== "missing") add("metadata_unassigned", field, "Metadata tidak dapat dikaitkan karena kode petak tidak tersedia.", "warning");
       }
     }
-    for (const field of ["plotArea", "fuelRefill", "actualFuelUsage", "workingHours", "remainingFuel"] as const satisfies readonly NumericField[]) {
+    for (const field of ["plotArea", "totalFuelConsumption", "fuelRefill", "actualFuelUsage", "workingHours", "remainingFuel"] as const satisfies readonly NumericField[]) {
       if (record[field] !== null && record[field] < 0) {
         invalidFields.push(field);
         add("negative_value", field, "Nilai negatif disimpan, tetapi tidak dipakai pada metrik terkait.");

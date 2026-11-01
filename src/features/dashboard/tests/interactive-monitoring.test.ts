@@ -73,8 +73,31 @@ test("fuel comparison follows period filters and preserves missing, zero and inv
     row({ no: 6, plotCode: "D", date: "", fuelRefill: 900, actualFuelUsage: 900 }),
   ];
   const view = buildDashboardViewModel(input, { ...all, startDate: "2026-10-01", endDate: "2026-10-31" });
-  assert.deepEqual(fuelByPlot(view.filteredValidatedRecords), [{ code: "A", refill: 10, fuel: 5 }, { code: "B", refill: null, fuel: 0 }, { code: "C", refill: null, fuel: 7 }]);
+  assert.deepEqual(fuelByPlot(view.filteredValidatedRecords, view.inventory), [{ code: "A", refill: 10, consumption: 9999 }, { code: "B", refill: null, consumption: 9999 }, { code: "C", refill: null, consumption: 9999 }]);
   assert.equal(view.summary.totals.refill, 10);
   assert.equal(view.summary.totals.fuel, 12);
-  assert.deepEqual(fuelByPlot([]), []);
+  assert.deepEqual(fuelByPlot([], view.inventory), []);
+});
+
+
+test("fuel comparison uses one source metadata value without changing period totals", async () => {
+  const { fuelByPlot } = await import("../lib/interactive-monitoring");
+  const input = [
+    row({ no: 1, plotCode: "A", date: "01/10/2026", totalFuelConsumption: 550, fuelRefill: 100 }),
+    row({ no: 2, plotCode: "A", date: "02/10/2026", totalFuelConsumption: "", fuelRefill: 50 }),
+    row({ no: 3, plotCode: "A", date: "01/11/2026", totalFuelConsumption: 550, fuelRefill: 400 }),
+    row({ no: 4, plotCode: "B", date: "01/10/2026", totalFuelConsumption: 300, fuelRefill: 20 }),
+    row({ no: 5, plotCode: "B", date: "02/10/2026", totalFuelConsumption: 400, fuelRefill: 10 }),
+    row({ no: 6, plotCode: "C", date: "03/10/2026", totalFuelConsumption: -1, fuelRefill: 5 }),
+  ];
+  const view = buildDashboardViewModel(input, { ...all, startDate: "2026-10-01", endDate: "2026-10-31" });
+  assert.deepEqual(fuelByPlot(view.filteredValidatedRecords, view.inventory), [
+    { code: "A", refill: 150, consumption: 550 },
+    { code: "B", refill: 30, consumption: null },
+    { code: "C", refill: 5, consumption: null },
+  ]);
+  assert.equal(view.summary.totals.refill, 185);
+  assert.ok(view.issues.some((issue) => issue.field === "totalFuelConsumption" && issue.code === "metadata_conflict"));
+  assert.ok(view.issues.some((issue) => issue.field === "totalFuelConsumption" && issue.code === "negative_value"));
+  assert.deepEqual(view.inventory.find((plot) => plot.code === "A")?.cumulativeFuelMetadata.sourceRows.map((source) => source.row), [2, 4]);
 });

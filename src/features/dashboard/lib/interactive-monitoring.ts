@@ -1,5 +1,5 @@
 import { addDays, addWeeks, endOfISOWeek, format, parseISO, startOfISOWeek } from "date-fns";
-import { workStatuses, type DashboardFilters, type DataQualityIssue, type OverviewRecord, type ValidatedOverviewRecord, type WorkStatus } from "../types";
+import { workStatuses, type DashboardFilters, type DataQualityIssue, type InventoryPlot, type OverviewRecord, type ValidatedOverviewRecord, type WorkStatus } from "../types";
 import { validDate } from "./normalize-overview";
 import { calculateKpis, measurement, sumMeasured } from "./calculate-kpis";
 import { deriveWorkStatus } from "./derive-work-status";
@@ -49,10 +49,11 @@ export function monitoringTrend(rows: readonly ValidatedOverviewRecord[], interv
   return result;
 }
 
-export function fuelByPlot(rows: readonly ValidatedOverviewRecord[]) {
+export function fuelByPlot(rows: readonly ValidatedOverviewRecord[], inventory: readonly InventoryPlot[]) {
+  const byCode = new Map(inventory.map((plot) => [plot.code, plot.cumulativeFuelMetadata.value]));
   return [...Map.groupBy(rows, (row) => row.record.plotCode)].map(([code, group]) => {
-    const { refill, fuel } = calculateKpis(group);
-    return { code, refill, fuel };
+    const { refill } = calculateKpis(group);
+    return { code, refill, consumption: byCode.get(code) ?? null };
   }).sort((a, b) => a.code.localeCompare(b.code));
 }
 
