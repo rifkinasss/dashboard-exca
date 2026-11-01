@@ -1,10 +1,19 @@
-export const workStatuses = ["Belum mulai", "Mulai pengerjaan", "Dalam pengerjaan", "Selesai", "Ditunda"] as const;
+export const workStatuses = [
+  "Belum mulai",
+  "Mulai pengerjaan",
+  "Dalam pengerjaan",
+  "Selesai",
+  "Ditunda",
+] as const;
 export type WorkStatus = (typeof workStatuses)[number];
 export type RawCell = string | number | boolean | null | undefined;
 export type RawOverviewRow = readonly RawCell[];
 export type CellState = "valid" | "missing" | "invalid";
 
-export interface PlotCodeMerge { startRow: number; endRow: number; }
+export interface PlotCodeMerge {
+  startRow: number;
+  endRow: number;
+}
 
 export interface SourceRow {
   worksheet: string;
@@ -41,14 +50,22 @@ export const overviewColumns = [
   { column: "B", header: "No. SPK", field: "spkNumber" },
   { column: "C", header: "Kode Petak", field: "plotCode" },
   { column: "D", header: "Luas Petak (Ha)", field: "plotArea" },
-  { column: "E", header: "Total Konsumsi Solar", field: "totalFuelConsumption" },
+  {
+    column: "E",
+    header: "Total Konsumsi Solar",
+    field: "totalFuelConsumption",
+  },
   { column: "F", header: "Tanggal", field: "date" },
   { column: "G", header: "HM Awal", field: "hmStart" },
   { column: "H", header: "HM Akhir", field: "hmEnd" },
   { column: "I", header: "HM Kerja (Jam)", field: "workingHours" },
   { column: "J", header: "Est. Jam Kerja", field: "estimatedWorkingHours" },
   { column: "K", header: "Pengisian Solar (L)", field: "fuelRefill" },
-  { column: "L", header: "Pemakaian Solar per Jam (L/Hr)", field: "fuelPerHour" },
+  {
+    column: "L",
+    header: "Pemakaian Solar per Jam (L/Hr)",
+    field: "fuelPerHour",
+  },
   { column: "M", header: "Pemakaian Solar Riil (L)", field: "actualFuelUsage" },
   { column: "N", header: "Sisa/Stok Tangki (L)", field: "remainingFuel" },
   { column: "O", header: "Status Pekerjaan", field: "workStatus" },
@@ -56,7 +73,10 @@ export const overviewColumns = [
 ] as const;
 
 export type OverviewField = (typeof overviewColumns)[number]["field"];
-export type NumericField = Exclude<OverviewField, "spkNumber" | "plotCode" | "date" | "workStatus" | "notes">;
+export type NumericField = Exclude<
+  OverviewField,
+  "spkNumber" | "plotCode" | "date" | "workStatus" | "notes"
+>;
 export type NumberPolicy = "id-ID" | "strict";
 export interface ProcessingOptions {
   worksheetName?: string;
@@ -68,8 +88,22 @@ export interface ProcessingOptions {
 }
 export interface DataQualityIssue {
   severity: "info" | "warning" | "error";
-  code: "missing_value" | "invalid_value" | "negative_value" | "hm_reversed" |
-    "hm_mismatch" | "area_conflict" | "zero_area" | "metadata_conflict" | "metadata_unassigned" | "undated_plot" | "completion_area_excluded" | "status_conflict" | "duplicate_record" | "unpaired_measurements" | "column_count";
+  code:
+    | "missing_value"
+    | "invalid_value"
+    | "negative_value"
+    | "hm_reversed"
+    | "hm_mismatch"
+    | "area_conflict"
+    | "zero_area"
+    | "metadata_conflict"
+    | "metadata_unassigned"
+    | "undated_plot"
+    | "completion_area_excluded"
+    | "status_conflict"
+    | "duplicate_record"
+    | "unpaired_measurements"
+    | "column_count";
   source: SourceRow;
   field: OverviewField | null;
   message: string;
@@ -125,6 +159,9 @@ export interface DashboardSummary {
     hours: number | null;
     efficiency: number | null;
   };
-  statuses: { status: WorkStatus | "Belum diketahui" | "Perlu tinjau"; count: number }[];
+  statuses: {
+    status: WorkStatus | "Belum diketahui" | "Perlu tinjau";
+    count: number;
+  }[];
   missingMeasurements: number;
 }

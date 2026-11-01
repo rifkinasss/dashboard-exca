@@ -13,12 +13,29 @@ async function DashboardContent() {
     new Promise<void>((resolve) => setTimeout(resolve, 1500)),
   ]);
   if (data.kind === "error") {
-    return <main className="route-state"><h1>Sinkronisasi dashboard gagal</h1><SourceStatus status={data.status} /></main>;
+    return (
+      <main className="route-state">
+        <h1>Sinkronisasi dashboard gagal</h1>
+        <SourceStatus status={data.status} />
+      </main>
+    );
   }
   const initialFilters = { ...defaultFilters, startDate: "", endDate: "" };
-  return <Dashboard rows={data.rows} status={data.status} plotCodeMerges={data.plotCodeMerges} spkMerges={data.spkMerges} initialFilters={initialFilters} />;
+  return (
+    <Dashboard
+      rows={data.rows}
+      status={data.status}
+      plotCodeMerges={data.plotCodeMerges}
+      spkMerges={data.spkMerges}
+      initialFilters={initialFilters}
+    />
+  );
 }
 
 export default function Home() {
-  return <Suspense fallback={<Loading />}><DashboardContent /></Suspense>;
+  return (
+    <Suspense fallback={<Loading />}>
+      <DashboardContent />
+    </Suspense>
+  );
 }
