@@ -11,9 +11,9 @@ import type { DashboardSummary, InventoryPlot, ValidatedOverviewRecord } from ".
 import { fuelByPlot, monitoringTrend } from "../lib/interactive-monitoring";
 import { formatDate, formatNumber } from "../lib/format";
 
-const orange = "#EA580C";
-const axis = { tickLine: false, axisLine: false, tick: { fill: "#64748B", fontSize: 11 } };
-const tooltipStyle = { border: "1px solid #E2E8F0", borderRadius: 6, fontSize: 12, color: "#334155" };
+const orange = "var(--primary)";
+const axis = { tickLine: false, axisLine: false, tick: { fill: "#64748B", fontSize: 12 } };
+const tooltipStyle = { border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12, color: "#334155" };
 const subscribe = () => () => {};
 const motionQuery = "(prefers-reduced-motion: reduce)";
 const subscribeMotion = (notify: () => void) => {
@@ -106,7 +106,7 @@ export function Charts({ summary, rows, inventory, summaryPanel }: { summary: Da
         <CardContent className="chart-area">
           {!fuelComparison.some((plot) => plot.refill !== null || plot.consumption !== null) ? <p className="empty-chart">Tidak ada pengukuran pada filter ini.</p> : <ResponsiveContainer width="100%" height="100%">
             <BarChart data={fuelComparison} margin={{ top: 12, right: 8, bottom: 0, left: 0 }} accessibilityLayer>
-              <CartesianGrid vertical={false} stroke="#E2E8F0" strokeDasharray="3 4" />
+            <CartesianGrid vertical={false} stroke="#E2E8F0" strokeDasharray="3 4" />
               <XAxis dataKey="code" {...axis} tickMargin={10} />
               <YAxis {...axis} width={46} tickFormatter={formatNumber} />
               <Tooltip cursor={{ fill: "#FFF7ED" }} content={({ active, label }) => { const plot = fuelComparison.find((item) => item.code === String(label)); return active && plot ? <div className="trend-tooltip"><strong>{plot.code}</strong><br />Pengisian periode: {formatNumber(plot.refill)} L<br />Total konsumsi sumber: {formatNumber(plot.consumption)} L</div> : null; }} />
@@ -138,7 +138,7 @@ function HorizontalChart({ plots, dataKey, unit, reducedMotion }: {
       <BarChart data={plots} layout="vertical" margin={{ top: 0, right: 18, bottom: 0, left: 0 }} accessibilityLayer>
         <CartesianGrid horizontal={false} stroke="#E2E8F0" strokeDasharray="3 4" />
         <XAxis type="number" {...axis} tickFormatter={formatNumber} />
-        <YAxis type="category" dataKey="code" {...axis} width={56} interval={0} />
+        <YAxis type="category" dataKey="code" {...axis} width={70} interval={0} />
         <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "#FFF7ED" }} formatter={(value) => [`${formatNumber(typeof value === "number" ? value : null)} ${unit}`, dataKey === "hours" ? "HM kerja" : "Konsumsi"]} />
         <Bar dataKey={dataKey} fill={orange} barSize={10} radius={[0, 3, 3, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
       </BarChart>

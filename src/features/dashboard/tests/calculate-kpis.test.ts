@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { calculateKpis } from "../lib/calculate-kpis";
+import { averageFuelPerHour, calculateKpis } from "../lib/calculate-kpis";
 import { fixture, prepare, row } from "./fixtures";
 
 test("J, L and H totals and paired weighted rate match manually verified values", () => {
@@ -38,4 +38,18 @@ test("non-finite parsed values and arithmetic overflow cannot escape as NaN or I
   assert.equal(overflow.fuel, null);
   const tiny = calculateKpis(prepare([row({ actualFuelUsage: 1e308, workingHours: 1e-308, hmStart: "", hmEnd: "" })]).records);
   assert.equal(tiny.efficiency, null);
+});
+
+test("source hourly fuel average uses valid nonnegative values without duplicates", () => {
+  const rows = prepare([
+    row({ fuelPerHour: 8 }),
+    row({ date: "02/10/2026", fuelPerHour: 12 }),
+    row({ date: "03/10/2026", fuelPerHour: 0 }),
+    row({ date: "04/10/2026", fuelPerHour: -3 }),
+    row({ date: "05/10/2026", fuelPerHour: "" }),
+    row({ date: "06/10/2026", fuelPerHour: "bad" }),
+    row({ date: "02/10/2026", fuelPerHour: 12 }),
+  ]).records;
+  assert.ok(Math.abs(averageFuelPerHour(rows)! - 20 / 3) < 1e-12);
+  assert.equal(averageFuelPerHour(prepare([row({ fuelPerHour: "" })]).records), null);
 });

@@ -4,7 +4,7 @@ import { validateOverview } from "./validate-overview";
 import { defaultFilters, filterOverview } from "./overview";
 import { aggregateByPlot } from "./aggregate-by-plot";
 import { aggregateDailyTrend } from "./aggregate-daily-trend";
-import { calculateKpis, measurement, sumMeasured } from "./calculate-kpis";
+import { averageFuelPerHour, calculateKpis, measurement, sumMeasured } from "./calculate-kpis";
 import { calculateMonthlyAreaTarget } from "./monthly-area-target";
 import { buildPlotInventory } from "./plot-inventory";
 
@@ -61,6 +61,7 @@ export function buildDashboardViewModel(rawRows: readonly RawOverviewRow[], filt
     summary,
     monthlyTarget,
     workedArea,
+    averageFuelPerHour: averageFuelPerHour(filtered),
     inventory,
     visibleInventory,
     filteredRecords: filtered.map((row) => row.record),

@@ -28,3 +28,10 @@ export function calculateKpis(records: readonly ValidatedOverviewRecord[]) {
     efficiency: rate !== null && Number.isFinite(rate) ? rate : null,
   };
 }
+
+export function averageFuelPerHour(records: readonly ValidatedOverviewRecord[]): number | null {
+  const values = records.filter((row) => row.duplicateOf === null).map((row) => measurement(row, "fuelPerHour")).filter((value): value is number => value !== null && Number.isFinite(value) && value >= 0);
+  if (!values.length) return null;
+  const average = values.reduce((total, value) => total + value / values.length, 0);
+  return Number.isFinite(average) ? average : null;
+}

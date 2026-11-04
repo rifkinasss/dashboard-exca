@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AlertCircle, ChevronDown, Clock3 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import type { DataSourceStatus } from "../data/source-types";
@@ -11,30 +9,29 @@ const syncTime = (value: string) => new Intl.DateTimeFormat("id-ID", {
   dateStyle: "medium", timeStyle: "medium", timeZone: "Asia/Makassar",
 }).format(new Date(value));
 
-export function SourceStatus({ status }: { status: DataSourceStatus }) {
-  const [refreshing, setRefreshing] = useState(false);
-  const [now, setNow] = useState(() => Date.parse(status.evaluatedAt));
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  const stale = status.state === "stale" || (status.lastSuccessAt !== null && now - Date.parse(status.lastSuccessAt) >= status.ttlSeconds * 1000);
-  const state = status.state === "failed" ? "failed" : stale ? "stale" : "connected";
-  const StatusIcon = state === "failed" ? AlertCircle : state === "stale" ? Clock3 : CheckCircle2;
-  return (
+export function SourceStatus({ status, compact = false }: { status: DataSourceStatus; compact?: boolean }) {
+  if (status.state === "connected" || status.state === "demo") return null;
+  const stale = status.state === "stale";
+  const state = status.state;
+  const StatusIcon = stale ? Clock3 : AlertCircle;
+  const alert = (
     <Alert className="source-alert" data-source-state={state} role="status">
       <div className="source-alert-icon"><StatusIcon aria-hidden="true" /></div>
       <div className="source-alert-body">
         <div className="source-alert-heading"><AlertTitle>Google Sheets</AlertTitle><Badge variant="outline" className="source-alert-badge">{state === "failed" ? "Sinkronisasi gagal" : state === "stale" ? "Perlu diperbarui" : "Terhubung"}</Badge></div>
         <AlertDescription className="source-alert-description">
-          <p>{status.lastSuccessAt ? `Sinkronisasi terakhir: ${syncTime(status.lastSuccessAt)} WITA.` : "Belum ada sinkronisasi berhasil."} Cache server {status.ttlSeconds} detik.</p>
+          <p>{status.lastSuccessAt ? `Sinkronisasi terakhir: ${syncTime(status.lastSuccessAt)} WITA.` : "Belum ada sinkronisasi berhasil."}</p>
           {status.error && <p>Sinkronisasi gagal ({status.error.category}{status.error.reason ? ` · ${status.error.reason}` : ""}). {status.error.message} {status.error.nextAction}</p>}
           {status.error?.columns && <p>Posisi yang perlu diperiksa: {status.error.columns.join("; ")}.</p>}
           {stale && <p>Snapshot belum diperiksa ulang; data sumber mungkin sudah berubah.</p>}
-          <p>Pemeriksaan sumber dilakukan saat halaman dimuat ulang setelah interval cache.</p>
+          <p>Data akan diperiksa kembali secara otomatis.</p>
         </AlertDescription>
       </div>
-      <Button variant="outline" size="sm" className="source-alert-refresh" disabled={refreshing} onClick={() => { setRefreshing(true); window.location.reload(); }}><RefreshCw data-icon="inline-start" aria-hidden="true" />{refreshing ? "Memuat ulang…" : "Perbarui data"}</Button>
     </Alert>
   );
+  if (!compact) return alert;
+  return <details className="source-alert-disclosure" data-source-state={state} open={state === "failed"}>
+    <summary><span className="source-alert-brief"><StatusIcon aria-hidden="true" /><strong>Google Sheets</strong><Badge variant="outline" className="source-alert-badge">{state === "failed" ? "Sinkronisasi gagal" : state === "stale" ? "Perlu diperbarui" : "Terhubung"}</Badge></span><span className="source-alert-last-sync">{status.lastSuccessAt ? `Terakhir ${syncTime(status.lastSuccessAt)} WITA` : "Belum ada sinkronisasi berhasil"}</span><ChevronDown className="source-alert-chevron" aria-hidden="true" /></summary>
+    {alert}
+  </details>;
 }

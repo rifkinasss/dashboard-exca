@@ -1,28 +1,30 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Info } from "lucide-react";
+import { Construction, Info } from "lucide-react";
 import type { DashboardFilters, PlotCodeMerge, RawOverviewRow } from "../types";
 import type { DataSourceStatus } from "../data/source-types";
 import { defaultFilters } from "../lib/overview";
 import { buildDashboardViewModel } from "../lib/build-dashboard-view-model";
 import { readFilters, writeFilters } from "../lib/interactive-monitoring";
-import { PlotDetail, PlotComparison } from "./plot-detail";
+import { PlotDetail } from "./plot-detail";
 import { Filters } from "./filters";
 import { KpiCards } from "./kpi-cards";
 import { Charts } from "./charts";
 import { PlotSummary } from "./plot-summary";
-import { DataQuality } from "./data-quality";
+import { summarizeFuelWithdrawals, type FuelWithdrawalData } from "../lib/fuel-withdrawals";
 import { SourceStatus } from "./source-status";
 
 export function Dashboard({
   rows,
+  withdrawals,
   status,
   plotCodeMerges,
   spkMerges,
   initialFilters = defaultFilters,
 }: {
   rows: readonly RawOverviewRow[];
+  withdrawals: FuelWithdrawalData | null;
   status: DataSourceStatus;
   plotCodeMerges?: readonly PlotCodeMerge[];
   spkMerges?: readonly PlotCodeMerge[];
@@ -65,20 +67,19 @@ export function Dashboard({
         Lewati ke dashboard
       </a>
       <header className="dashboard-header">
+        <span className="dashboard-heading-icon"><Construction aria-hidden="true" /></span>
         <div className="header-copy">
-          <h1>
-            DASHBOARD MONITORING <em>PETAK &amp; SOLAR</em>
-          </h1>
-          <p>
-            Produktivitas Alat <span>•</span> Konsumsi BBM <span>•</span>{" "}
-            Progres Pekerjaan
-          </p>
+          <h1>Dashboard Operasional</h1>
+          <p>Produktivitas alat, konsumsi BBM, dan progres pekerjaan.</p>
         </div>
       </header>
+      {status.source !== "mock" && status.state === "failed" && <SourceStatus status={status} compact />}
       <Filters
         value={filters}
         plotCodes={plotCodes}
         spkOptions={view.spkOptions}
+        periods={view.periods}
+        initialFilters={initialFilters}
         onChange={changeFilters}
         onReset={() => changeFilters(initialFilters)}
         isDemo={status.source === "mock"}
@@ -92,9 +93,7 @@ export function Dashboard({
               untuk pratinjau dashboard, bukan pengukuran spreadsheet aktual.
             </p>
           </div>
-        ) : (
-          <SourceStatus status={status} />
-        )}
+        ) : null}
         <div className="section-heading">
           <h2>Ikhtisar Operasional</h2>
           <span aria-live="polite">
@@ -105,7 +104,9 @@ export function Dashboard({
         </div>
         <KpiCards
           totals={summary.totals}
-          registeredCount={view.inventory.length}
+          withdrawals={summarizeFuelWithdrawals(withdrawals, filters, plotCodes)}
+          workedArea={view.workedArea}
+          averageFuelPerHour={view.averageFuelPerHour}
           monthlyTarget={view.monthlyTarget}
           spkFiltered={filters.selectedSpkNumbers.length > 0}
         />
@@ -146,14 +147,6 @@ export function Dashboard({
               onClose={() => setSelectedPlot(null)}
             />
           )}
-        <PlotComparison
-          plots={view.visibleInventory.filter((plot) =>
-            filters.plotCodes.includes(plot.code),
-          )}
-          allRows={view.scopedRecords}
-          periodRows={view.filteredValidatedRecords}
-        />
-        <DataQuality issues={view.issues} records={view.records} />
         <footer className="dashboard-footer">
           <span>
             Petak & Solar <span>·</span> Phase 4

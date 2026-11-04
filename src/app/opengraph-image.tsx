@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Petak & Solar — Dashboard Monitoring Operasional dan Keuangan";
+export const alt = "Excavator Management System — Dashboard Monitoring Petak, Solar, dan Keuangan";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -8,10 +8,10 @@ export default function OpenGraphImage() {
   return new ImageResponse(
     <div style={{ display: "flex", width: "100%", height: "100%", position: "relative", overflow: "hidden", background: "#fff7f1", color: "#172033", fontFamily: "sans-serif" }}>
       <div style={{ display: "flex", position: "absolute", left: 72, top: 64, alignItems: "center", gap: 12, color: "#c34b0a", fontSize: 22, fontWeight: 700, letterSpacing: 3 }}>
-        NASLABS <span style={{ color: "#edb38d" }}>/</span> MONITORING
+        EXCAVATOR <span style={{ color: "#edb38d" }}>/</span> MANAGEMENT SYSTEM
       </div>
       <div style={{ display: "flex", position: "absolute", left: 72, top: 166, flexDirection: "column" }}>
-        <span style={{ fontSize: 26, fontWeight: 700, letterSpacing: 2, color: "#b45321" }}>DASHBOARD</span>
+        <span style={{ fontSize: 26, fontWeight: 700, letterSpacing: 2, color: "#b45321" }}>DASHBOARD MONITORING</span>
         <span style={{ fontSize: 76, fontWeight: 800, letterSpacing: -3, lineHeight: 1.1 }}>PETAK <span style={{ color: "#e75106" }}>&amp; SOLAR</span></span>
         <span style={{ marginTop: 24, fontSize: 27, color: "#52627a" }}>Operasional excavator &amp; keuangan petak</span>
         <div style={{ display: "flex", gap: 14, marginTop: 32 }}>
@@ -28,7 +28,7 @@ export default function OpenGraphImage() {
           <rect x="37" y="124" width="123" height="19" rx="9.5" fill="#374047" /><path d="M49 134h100" stroke="#E9C6A7" strokeWidth="4" strokeDasharray="7 7" />
         </g>
       </svg>
-      <span style={{ position: "absolute", left: 72, bottom: 39, color: "#87401f", fontSize: 19, fontWeight: 700 }}>PETAK &amp; SOLAR · NASLABS</span>
+      <span style={{ position: "absolute", left: 72, bottom: 39, color: "#87401f", fontSize: 19, fontWeight: 700 }}>EXCAVATOR MANAGEMENT SYSTEM · NASLABS</span>
     </div>,
     size,
   );

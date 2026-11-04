@@ -19,7 +19,7 @@ export function PlotSummary({ plots, showAll, onShowAllChange, startDate, endDat
   return (
     <Card className="panel summary-panel" aria-labelledby="summary-title">
       <CardHeader className="panel-heading plot-summary-heading">
-        <div><CardTitle id="summary-title">Ringkasan Petak</CardTitle><CardDescription>Solar dan HM sesuai filter periode · {statusScope}</CardDescription></div>
+        <div><CardTitle id="summary-title">Ringkasan Petak</CardTitle><CardDescription>HM dan efisiensi sesuai filter periode · {statusScope}</CardDescription></div>
         <div className="summary-controls">
           <label className="check-option"><Checkbox checked={showAll} onCheckedChange={onShowAllChange} /> Tampilkan semua petak terdaftar</label>
           <span className="panel-meta">{visible.length} petak</span>
@@ -29,26 +29,24 @@ export function PlotSummary({ plots, showAll, onShowAllChange, startDate, endDat
         <Table>
           <TableHeader><TableRow>
             <TableHead scope="col">Kode Petak</TableHead><TableHead scope="col" className="num">Luas (Ha)</TableHead>
-            <TableHead scope="col" className="num">Total Solar Riil (L)</TableHead><TableHead scope="col" className="num">HM Kerja (Jam)</TableHead>
-            <TableHead scope="col">Status Pekerjaan</TableHead><TableHead scope="col">Aktivitas periode</TableHead>
+            <TableHead scope="col" className="num">Hour Meter (Jam)</TableHead><TableHead scope="col" className="num">Efisiensi (L/jam)</TableHead>
+            <TableHead scope="col">Status Pekerjaan</TableHead>
           </TableRow></TableHeader>
           <TableBody>{visible.map((plot) => {
             const sources = plot.areaMetadata.sourceRows.map((source) => `${source.worksheet}!D${source.row}`).join(", ");
             const areaNote = `${plot.areaRequiresReview ? "Luas perlu ditinjau. " : ""}${sources ? `Sumber: ${sources}` : "Sumber luas belum tersedia"}`;
-            const activity = plot.includedActivity ? "Ada aktivitas" : plot.hasActivity ? "Tidak cocok filter status" : "Tidak ada aktivitas";
             return <TableRow key={plot.code}>
               <th scope="row"><button className="detail-action" onClick={() => onSelect(plot.code)}>{plot.code}</button></th>
               <TableCell className="num"><span className="mobile-column-label" aria-hidden="true">Luas (Ha)</span><span title={areaNote}>{formatNumber(plot.area)}<span className="sr-only"> {areaNote}</span></span></TableCell>
-              <TableCell className="num"><span className="mobile-column-label" aria-hidden="true">Total Solar Riil (L)</span>{formatNumber(plot.fuel)}</TableCell>
-              <TableCell className="num"><span className="mobile-column-label" aria-hidden="true">HM Kerja (Jam)</span>{formatNumber(plot.hours)}</TableCell>
+              <TableCell className="num"><span className="mobile-column-label" aria-hidden="true">Hour Meter (Jam)</span>{formatNumber(plot.hours)}</TableCell>
+              <TableCell className="num"><span className="mobile-column-label" aria-hidden="true">Efisiensi (L/jam)</span>{formatNumber(plot.efficiency)}</TableCell>
               <TableCell><span className="mobile-column-label" aria-hidden="true">Status Pekerjaan</span><Badge variant="secondary" className="status-label" data-status={plot.status}>{plot.statusAmbiguous ? "Perlu tinjau" : plot.status ?? "Belum diketahui"}</Badge></TableCell>
-              <TableCell><span className="mobile-column-label" aria-hidden="true">Aktivitas periode</span>{activity}</TableCell>
             </TableRow>;
           })}</TableBody>
         </Table>
       </CardContent>
       {!visible.length && <p className="empty-state">Tidak ada petak pada filter ini. Ubah filter atau tampilkan semua petak.</p>}
-      <p className="table-footnote">Luas adalah metadata dari seluruh sumber. Status memakai riwayat hingga akhir periode; tanpa tanggal akhir, riwayat dapat mencakup tanggal mendatang. Solar dan HM hanya aktivitas dalam filter. Tabel mengikuti filter petak dan status. N/A berarti belum tersedia atau perlu tinjauan.</p>
+      <p className="table-footnote">HM dan efisiensi mengikuti filter periode. Status ditampilkan hingga akhir periode; tanpa tanggal akhir, status menggunakan riwayat terbaru.</p>
     </Card>
   );
 }
