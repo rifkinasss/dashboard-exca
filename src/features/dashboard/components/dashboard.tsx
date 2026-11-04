@@ -61,6 +61,7 @@ export function Dashboard({
     [rows, filters, worksheetName, plotCodeMerges, spkMerges],
   );
   const { summary, plotCodes } = view;
+  const withdrawalSummary = summarizeFuelWithdrawals(withdrawals, filters, plotCodes);
   return (
     <div className="dashboard-shell">
       <a className="skip-link" href="#main-content">
@@ -104,7 +105,7 @@ export function Dashboard({
         </div>
         <KpiCards
           totals={summary.totals}
-          withdrawals={summarizeFuelWithdrawals(withdrawals, filters, plotCodes)}
+          withdrawals={withdrawalSummary}
           workedArea={view.workedArea}
           averageFuelPerHour={view.averageFuelPerHour}
           monthlyTarget={view.monthlyTarget}
@@ -120,6 +121,7 @@ export function Dashboard({
         )}
         <Charts
           summary={summary}
+          withdrawals={withdrawalSummary}
           rows={view.filteredValidatedRecords}
           inventory={view.inventory}
           summaryPanel={

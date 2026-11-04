@@ -35,5 +35,5 @@ async function SettingsContent() {
 }
 
 export default function SettingsPage() {
-  return <Suspense fallback={<DashboardLoading section="operasional" />}><SettingsContent /></Suspense>;
+  return <Suspense fallback={<DashboardLoading layout="settings" />}><SettingsContent /></Suspense>;
 }

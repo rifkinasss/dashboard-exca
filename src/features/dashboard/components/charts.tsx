@@ -2,14 +2,16 @@
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, ChartNoAxesCombined, Settings, Hourglass, Fuel } from "lucide-react";
 import {
-  Bar, BarChart, CartesianGrid, Line, LineChart,
+  Bar, BarChart, CartesianGrid, LabelList, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import type { DashboardSummary, InventoryPlot, ValidatedOverviewRecord } from "../types";
 import { fuelByPlot, monitoringTrend } from "../lib/interactive-monitoring";
 import { formatDate, formatNumber } from "../lib/format";
+import { fuelWithdrawalDifference } from "../lib/fuel-withdrawals";
 
 const orange = "var(--primary)";
 const axis = { tickLine: false, axisLine: false, tick: { fill: "#64748B", fontSize: 12 } };
@@ -45,7 +47,7 @@ function ChartPanel({ title, description, children, empty, className = "" }: {
   );
 }
 
-export function Charts({ summary, rows, inventory, summaryPanel }: { summary: DashboardSummary; rows: ValidatedOverviewRecord[]; inventory: InventoryPlot[]; summaryPanel: ReactNode }) {
+export function Charts({ summary, rows, inventory, summaryPanel, withdrawals }: { summary: DashboardSummary; rows: ValidatedOverviewRecord[]; inventory: InventoryPlot[]; summaryPanel: ReactNode; withdrawals: { value: number | null; note: string } }) {
   const [interval, setInterval] = useState<"daily" | "weekly">("daily");
   const trend = useMemo(() => monitoringTrend(rows, interval), [rows, interval]);
   const fuelComparison = useMemo(() => fuelByPlot(rows, inventory), [rows, inventory]);
@@ -54,11 +56,9 @@ export function Charts({ summary, rows, inventory, summaryPanel }: { summary: Da
   if (!mounted) {
     return (
       <div className="chart-grid" role="status" aria-label="Menyiapkan grafik">
-        {chartTitles.filter((_, index) => index !== 2).map((title, index) => (
-          <section className={`panel chart-panel ${index < 2 ? "chart-wide" : ""} ${index === 4 ? "fuel-comparison-chart" : ""}`} key={title}>
-            <h2>{title}</h2><div className="chart-area chart-loading">Menyiapkan grafik…</div>
-          </section>
-        ))}
+        {Array.from({ length: 5 }, (_, index) => <section className="panel chart-panel" key={index} aria-hidden="true">
+          <Skeleton className="page-skeleton-card-label" /><Skeleton className="page-skeleton-chart-body" />
+        </section>)}
         {summaryPanel}
       </div>
     );
@@ -66,7 +66,7 @@ export function Charts({ summary, rows, inventory, summaryPanel }: { summary: Da
   const plots = summary.plots;
   return (
     <div className="chart-grid">
-      <ChartPanel title={chartTitles[0]} description="Pemakaian riil · liter" empty={!plots.some((plot) => plot.fuel !== null)} className="chart-wide">
+      <ChartPanel title={chartTitles[0]} description="Pemakaian riil · liter" empty={!plots.some((plot) => plot.fuel !== null)} className="chart-wide operational-consumption">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={plots} margin={{ top: 12, right: 8, bottom: 0, left: 0 }} accessibilityLayer>
             <CartesianGrid vertical={false} stroke="#E2E8F0" strokeDasharray="3 4" />
@@ -77,7 +77,7 @@ export function Charts({ summary, rows, inventory, summaryPanel }: { summary: Da
           </BarChart>
         </ResponsiveContainer>
       </ChartPanel>
-      <Card className="panel chart-panel chart-wide" aria-label={chartTitles[1]}>
+      <Card className="panel chart-panel chart-wide operational-trend" aria-label={chartTitles[1]}>
         <div className="panel-heading"><div className="chart-heading"><ChartNoAxesCombined aria-hidden="true" /><div><h2>{chartTitles[1]}</h2><p>Solar riil (L) dan HM (jam) · petak sesuai filter</p></div></div><label>Interval <select value={interval} onChange={(event) => setInterval(event.target.value as "daily" | "weekly")}><option value="daily">Harian</option><option value="weekly">Mingguan (Sen–Min)</option></select></label></div>
         <div className="chart-area">{!trend.some((point) => point.fuel !== null || point.hours !== null) ? <p className="empty-chart">Tidak ada pengukuran pada filter ini.</p> : <ResponsiveContainer width="100%" height="100%">
           <LineChart data={trend} margin={{ top: 12, right: 16, bottom: 0, left: 0 }} accessibilityLayer>
@@ -95,6 +95,7 @@ export function Charts({ summary, rows, inventory, summaryPanel }: { summary: Da
           <li><span className="trend-legend-swatch trend-legend-hours" aria-hidden="true" />Jam kerja · jam (sumbu kanan)</li>
         </ul>
       </Card>
+      <FuelVariance withdrawals={withdrawals} refill={summary.totals.refill} />
       <ChartPanel title={chartTitles[3]} description="Solar riil ÷ HM berpasangan · L/jam" empty={!plots.some((plot) => plot.efficiency !== null)}>
         <HorizontalChart plots={plots} dataKey="efficiency" unit="L/jam" reducedMotion={reducedMotion} />
       </ChartPanel>
@@ -127,6 +128,24 @@ export function Charts({ summary, rows, inventory, summaryPanel }: { summary: Da
   );
 }
 
+function FuelVariance({ withdrawals, refill }: { withdrawals: { value: number | null; note: string }; refill: number | null }) {
+  const taken = withdrawals.value;
+  const max = Math.max(taken ?? 0, refill ?? 0);
+  const difference = fuelWithdrawalDifference(taken, refill);
+  return <Card className="panel chart-panel fuel-variance" aria-label="Perbandingan pengambilan dan pengisian solar">
+    <CardHeader className="panel-heading"><div className="chart-heading"><Fuel aria-hidden="true" /><div><CardTitle>Pengambilan dan Pengisian Solar</CardTitle><CardDescription>Perbandingan sesuai filter periode</CardDescription></div></div></CardHeader>
+    <CardContent className="fuel-variance-content">
+      {[{ label: "Pengambilan", value: taken }, { label: "Pengisian", value: refill }].map(({ label, value }) => <div className="fuel-variance-row" key={label}>
+        <div className="fuel-variance-label"><span>{label}</span><strong>{value === null ? "Belum tersedia" : `${formatNumber(value)} L`}</strong></div>
+        <div className="fuel-variance-track" aria-hidden="true"><span style={{ width: `${max > 0 && typeof value === "number" ? (value / max) * 100 : 0}%` }} /></div>
+      </div>)}
+      <div className="fuel-variance-total"><span>Selisih pencatatan</span><strong>{difference === null ? "Belum tersedia" : `${difference > 0 ? "+" : ""}${formatNumber(difference)} L`}</strong></div>
+      <p className="fuel-variance-note">Pengambilan dikurangi pengisian; selisih bukan sisa stok.</p>
+      {withdrawals.note !== "Pengambilan dalam periode" && <p className="fuel-variance-note" role="status">{withdrawals.note}</p>}
+    </CardContent>
+  </Card>;
+}
+
 function HorizontalChart({ plots, dataKey, unit, reducedMotion }: {
   plots: DashboardSummary["plots"];
   dataKey: "efficiency" | "hours";
@@ -135,12 +154,14 @@ function HorizontalChart({ plots, dataKey, unit, reducedMotion }: {
 }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={plots} layout="vertical" margin={{ top: 0, right: 18, bottom: 0, left: 0 }} accessibilityLayer>
+      <BarChart data={plots} layout="vertical" margin={{ top: 0, right: 56, bottom: 0, left: 0 }} accessibilityLayer>
         <CartesianGrid horizontal={false} stroke="#E2E8F0" strokeDasharray="3 4" />
         <XAxis type="number" {...axis} tickFormatter={formatNumber} />
         <YAxis type="category" dataKey="code" {...axis} width={70} interval={0} />
         <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "#FFF7ED" }} formatter={(value) => [`${formatNumber(typeof value === "number" ? value : null)} ${unit}`, dataKey === "hours" ? "HM kerja" : "Konsumsi"]} />
-        <Bar dataKey={dataKey} fill={orange} barSize={10} radius={[0, 3, 3, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
+        <Bar dataKey={dataKey} fill={dataKey === "hours" ? "#2563EB" : orange} barSize={10} radius={[0, 3, 3, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out">
+          <LabelList dataKey={dataKey} position="right" offset={7} fill="#334155" fontSize={12} formatter={(value: unknown) => typeof value === "number" && Number.isFinite(value) ? formatNumber(value) : ""} />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );

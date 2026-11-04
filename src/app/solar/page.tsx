@@ -19,4 +19,4 @@ async function SolarContent() {
   return <div className="directory-main"><FuelWithdrawalDirectory data={data} priceCatalog={priceCatalog} authReady={authReady} writerReady={authReady && withdrawalWriterReady()} priceWriterReady={authReady && fuelPriceWriterReady()} userEmail={userEmail} /></div>;
 }
 
-export default function SolarPage() { return <Suspense fallback={<DashboardLoading section="operasional" />}><SolarContent /></Suspense>; }
+export default function SolarPage() { return <Suspense fallback={<DashboardLoading layout="solar" />}><SolarContent /></Suspense>; }

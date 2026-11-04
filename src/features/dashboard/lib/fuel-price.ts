@@ -49,3 +49,15 @@ export function resolveWithdrawalPricing(record: { date: string; liters: number;
   if (price === undefined || !Number.isFinite(price * record.liters)) return { kind: "unavailable" as const, price: null, cost: null };
   return { kind: "estimated" as const, price, cost: price * record.liters };
 }
+
+export function summarizePurchaseCosts(records: readonly { date: string; liters: number; price: number | null; cost: number | null; priceInvalid: boolean }[], catalog: FuelPriceCatalog | null) {
+  const prices = records.map((record) => resolveWithdrawalPricing(record, catalog));
+  const costs = prices.flatMap((price) => price.cost === null ? [] : [price.cost]);
+  const total = costs.reduce((sum, cost) => sum + cost, 0);
+  return {
+    cost: records.length === 0 ? 0 : costs.length && Number.isFinite(total) ? total : null,
+    covered: costs.length,
+    estimated: prices.filter((price) => price.kind === "estimated").length,
+    total: records.length,
+  };
+}

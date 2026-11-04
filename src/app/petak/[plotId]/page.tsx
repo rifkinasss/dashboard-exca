@@ -23,5 +23,5 @@ async function PlotContent({ params }: { params: Promise<{ plotId: string }> }) 
 }
 
 export default function PlotRoute({ params }: { params: Promise<{ plotId: string }> }) {
-  return <Suspense fallback={<DashboardLoading section="operasional" />}><PlotContent params={params} /></Suspense>;
+  return <Suspense fallback={<DashboardLoading layout="detail" />}><PlotContent params={params} /></Suspense>;
 }

@@ -3,6 +3,11 @@ import type { DashboardFilters } from "../types";
 export interface FuelWithdrawal { date: string; liters: number; plotCode: string; sourceRow: number; price: number | null; cost: number | null; priceInvalid: boolean }
 export interface FuelWithdrawalData { records: FuelWithdrawal[]; invalidRows: number[] }
 
+export function fuelWithdrawalDifference(taken: number | null, refill: number | null): number | null {
+  if (taken === null || refill === null || !Number.isFinite(taken - refill)) return null;
+  return taken - refill;
+}
+
 export function selectPlotPurchases(data: FuelWithdrawalData | null, plotCode: string) {
   const code = plotCode.trim().toUpperCase();
   return (data?.records ?? []).filter((record) => record.plotCode === code).sort((a, b) => b.date.localeCompare(a.date) || b.sourceRow - a.sourceRow);

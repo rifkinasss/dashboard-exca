@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Info, Plus, RotateCcw, Search } from "lucide-react";
+import { Fuel, Info, Plus, RotateCcw, Search, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatNumber } from "../lib/format";
+import { summarizePurchaseCosts } from "../lib/fuel-price";
 import type { FuelPriceCatalog } from "../lib/fuel-price";
 import type { FuelWithdrawalData } from "../lib/fuel-withdrawals";
 import { FuelWithdrawalDataTable } from "./fuel-withdrawal-data-table";
@@ -18,6 +21,10 @@ export function FuelWithdrawalDirectory({ data, priceCatalog, authReady, writerR
   const [page, setPage] = useState(1);
   const invalidRange = Boolean(start && end && start > end);
   const filtered = useMemo(() => data.records.filter((row) => !invalidRange && row.plotCode.toLocaleLowerCase("id-ID").includes(query.trim().toLocaleLowerCase("id-ID")) && (!start || row.date >= start) && (!end || row.date <= end)).sort((a, b) => b.date.localeCompare(a.date) || b.sourceRow - a.sourceRow), [data.records, query, start, end, invalidRange]);
+  const liters = filtered.reduce((sum, row) => sum + row.liters, 0);
+  const costs = summarizePurchaseCosts(filtered, priceCatalog);
+  const incomplete = costs.covered < costs.total || data.invalidRows.length > 0;
+  const costNote = [incomplete ? `Subtotal ${costs.covered} dari ${costs.total} transaksi` : `${costs.total} transaksi`, costs.estimated ? `${costs.estimated} estimasi` : "", data.invalidRows.length ? `${data.invalidRows.length} baris sumber tidak valid` : ""].filter(Boolean).join(" · ");
   const plotCodes = [...new Set(data.records.map((row) => row.plotCode))].sort();
   const hasFilters = Boolean(query || start || end);
   function resetFilters() { setQuery(""); setStart(""); setEnd(""); setPage(1); }
@@ -27,6 +34,11 @@ export function FuelWithdrawalDirectory({ data, priceCatalog, authReady, writerR
       <div><p className="fuel-directory-eyebrow">Manajemen data</p><h1>Pembelian Solar</h1><p>Catatan pengambilan solar berdasarkan tanggal dan kode petak.</p></div>
       <Button className="fuel-add-button" onClick={() => setOpen(true)}><Plus data-icon="inline-start" aria-hidden="true" />Tambah pembelian</Button>
     </header>
+
+    <section className="fuel-summary" aria-label="Ringkasan pembelian solar">
+      <Card className="plot-list-kpi"><CardHeader><CardTitle><span><Fuel aria-hidden="true" /></span>Total pembelian solar</CardTitle></CardHeader><CardContent><strong>{invalidRange || !Number.isFinite(liters) ? "—" : `${formatNumber(liters)} L`}</strong><small>{invalidRange ? "Pilih rentang tanggal yang valid" : `${filtered.length} transaksi sesuai filter${data.invalidRows.length ? ` · ${data.invalidRows.length} baris sumber tidak valid` : ""}`}</small></CardContent></Card>
+      <Card className="plot-list-kpi"><CardHeader><CardTitle><span><Wallet aria-hidden="true" /></span>Total biaya pembelian solar</CardTitle></CardHeader><CardContent><strong>{invalidRange || costs.cost === null ? "Belum tersedia" : new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 2 }).format(costs.cost)}</strong><small>{invalidRange ? "Pilih rentang tanggal yang valid" : costNote}</small></CardContent></Card>
+    </section>
 
     <FuelPriceHistory catalog={priceCatalog} authReady={authReady} writerReady={priceWriterReady} userEmail={userEmail} />
 

@@ -1,4 +1,4 @@
-import { Blocks, Fuel, Droplets, Hourglass, Gauge, Target } from "lucide-react";
+import { Blocks, Droplets, Fuel, Hourglass, Gauge, Target } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MONTHLY_AREA_TARGET_HA } from "../config/monthly-target";
 import type { DashboardSummary } from "../types";

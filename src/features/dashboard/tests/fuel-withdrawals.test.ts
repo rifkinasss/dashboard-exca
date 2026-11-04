@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseFuelWithdrawals, selectPlotPurchases, selectPlotPurchasesOnDate, summarizeFuelWithdrawals, summarizePlotPurchases } from "../lib/fuel-withdrawals";
+import { fuelWithdrawalDifference, parseFuelWithdrawals, selectPlotPurchases, selectPlotPurchasesOnDate, summarizeFuelWithdrawals, summarizePlotPurchases } from "../lib/fuel-withdrawals";
+
+test("withdrawal difference preserves negative values and unavailable data", () => {
+  assert.equal(fuelWithdrawalDifference(2750, 2290), 460);
+  assert.equal(fuelWithdrawalDifference(100, 150), -50);
+  assert.equal(fuelWithdrawalDifference(0, 0), 0);
+  assert.equal(fuelWithdrawalDifference(null, 100), null);
+  assert.equal(fuelWithdrawalDifference(100, null), null);
+});
 import { parseFuelPriceCatalog, resolveWithdrawalPricing } from "../lib/fuel-price";
 import { defaultFilters } from "../lib/overview";
 
