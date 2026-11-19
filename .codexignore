@@ -1,0 +1,36 @@
+# Dependencies & Package Managers
+node_modules/
+.pnp/
+.pnp.js
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+
+# Next.js Build & Cache
+.next/
+out/
+build/
+dist/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# Media & Aset Statis (Hindari pemindaian gambar/font)
+public/images/
+public/assets/
+public/fonts/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.svg
+*.ico
+*.mp4
+
+# Testing, Logs & Environment
+coverage/
+.nyc_output/
+*.log
+.env*
+.git/

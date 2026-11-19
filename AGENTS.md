@@ -1,9 +1,12 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Konteks & Aturan Proyek Next.js + Shadcn UI
 
-## This is NOT the Next.js you know
+- Stack: Next.js (App Router), TypeScript, Tailwind CSS, Shadcn UI, Lucide React.
+- Bahasa: Jawab sangat singkat, langsung ke kode tanpa penjelasan panjang.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+## Aturan Hemat Kuota
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- Hanya baca file yang di-mention atau relevan langsung dengan path rute yang diminta.
+- JANGAN baca atau ubah file di dalam `components/ui/*` kecuali diminta secara eksplisit. Anggap komponen dasar (Button, Input, Card, Dialog, Table, Form) sudah tersedia di `@/components/ui/...`.
+- Untuk menambah komponen Shadcn baru, cukup berikan perintah CLI (`npx shadcn@latest add [nama]`) dalam teks jawaban, jangan jalankan di terminal kecuali diizinkan.
+- Gunakan icon dari `lucide-react`.
+- JANGAN jalankan `npm run build` secara otomatis karena memakan output terminal yang besar.
