@@ -1,2 +1,6 @@
 import { ManagementPage } from "@/features/management/components/management-page";
-export default function SpkPage() { return <ManagementPage kind="spk" />; }
+import { ManagementGate } from "@/features/auth/components/management-gate";
+
+export const metadata = { title: "Data SPK" };
+
+export default function SpkPage() { return <ManagementGate title="Data SPK"><ManagementPage kind="spk" /></ManagementGate>; }

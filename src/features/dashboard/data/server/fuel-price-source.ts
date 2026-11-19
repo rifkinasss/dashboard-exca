@@ -1,5 +1,6 @@
 import "server-only";
-import { FUEL_PRICE_RANGE, parseFuelPriceCatalog, type FuelPriceCatalog } from "../../lib/fuel-price";
+import { parseFuelPriceCatalog, type FuelPriceCatalog } from "../../lib/fuel-price";
+import { fuelSheetConfig, sheetRange } from "../../lib/fuel-sheet-config";
 import { readSourceConfig } from "./config";
 import { createSheetsRequest } from "./google-sheets";
 
@@ -24,7 +25,7 @@ export async function getFuelPriceCatalog(): Promise<FuelPriceCatalog | null> {
         if (!response || typeof response !== "object" || !("values" in response)) throw new Error("Data harga tidak tersedia");
         return response.values;
       };
-      const master = await read(FUEL_PRICE_RANGE);
+      const master = await read(sheetRange(fuelSheetConfig(process.env).price, "H4:L"));
       const data = parseFuelPriceCatalog(master);
       if (currentGeneration === generation) cache = { data, at: Date.now() };
       return data;

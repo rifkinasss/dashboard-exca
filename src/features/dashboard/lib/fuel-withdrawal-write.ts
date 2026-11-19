@@ -1,8 +1,28 @@
 import { planWithdrawalTable } from "./fuel-withdrawal-table";
+import { parseFuelWithdrawals, type FuelWithdrawal } from "./fuel-withdrawals";
 
 export type WithdrawalValue = { date: string; plotCode: string; liters: number; price: number };
 type Merge = { startRowIndex?: number; endRowIndex?: number; startColumnIndex?: number; endColumnIndex?: number };
 type SheetInfo = { sheetId: number; rowCount: number; merges: Merge[] };
+
+export function createWithdrawalEdit(values: unknown[][], original: FuelWithdrawal, input: { date: string; plotCode: string; liters: number }, newPrice: number | null, sheet: SheetInfo) {
+  if (!Number.isSafeInteger(original.sourceRow) || original.sourceRow < 5 || original.sourceRow > sheet.rowCount) return { ok: false as const, reason: "Baris transaksi tidak valid." };
+  if (input.date.slice(0, 7) !== original.date.slice(0, 7)) return { ok: false as const, reason: "Tanggal baru harus berada di bulan yang sama dengan transaksi awal." };
+  const headers = values.filter((row) => row[0] === "No" && row[1] === "Tanggal Ambil" && row[2] === "Solar" && row[3] === "No Petak");
+  if (!headers.length || headers.some((row) => row[4] !== "Harga Solar" || row[5] !== "Biaya Solar")) return { ok: false as const, reason: "Header worksheet tidak sesuai." };
+  const current = parseFuelWithdrawals(values).records.find((row) => row.sourceRow === original.sourceRow);
+  const keys = ["date", "liters", "plotCode", "price", "cost", "priceInvalid"] as const;
+  if (!current || keys.some((key) => current[key] !== original[key])) return { ok: false as const, reason: "Transaksi sudah berubah. Muat ulang halaman dan coba lagi." };
+  if (current.priceInvalid) return { ok: false as const, reason: "Harga transaksi tidak valid dan perlu ditinjau sebelum diedit." };
+  if (sheet.merges.some((merge) => (merge.startColumnIndex ?? 0) < 6 && (merge.endColumnIndex ?? 6) > 1 && (merge.startRowIndex ?? 0) < original.sourceRow && (merge.endRowIndex ?? Infinity) > original.sourceRow - 1)) return { ok: false as const, reason: "Baris transaksi memiliki sel gabung; perlu ditinjau." };
+  const price = input.date === current.date ? current.price : newPrice;
+  if (input.date !== current.date && (price === null || !Number.isFinite(price) || price <= 0)) return { ok: false as const, reason: "Harga yang disetujui untuk tanggal baru belum tersedia." };
+  const cost = price === null ? null : input.liters === current.liters && input.date === current.date ? current.cost : input.liters * price;
+  if (cost !== null && !Number.isFinite(cost)) return { ok: false as const, reason: "Biaya solar tidak valid." };
+  const rowValues = [Math.round(Date.parse(`${input.date}T00:00:00Z`) / 86400000) + 25569, input.liters, input.plotCode, price, cost];
+  const cells = rowValues.map((value) => value === null ? {} : { userEnteredValue: typeof value === "number" ? { numberValue: value } : { stringValue: value } });
+  return { ok: true as const, rowValues, requests: [{ updateCells: { start: { sheetId: sheet.sheetId, rowIndex: original.sourceRow - 1, columnIndex: 1 }, rows: [{ values: cells }], fields: "userEnteredValue" } }] };
+}
 
 export function createWithdrawalWrite(values: unknown[][], input: WithdrawalValue, sheet: SheetInfo) {
   const headers = values.filter((row) => row[0] === "No" && row[1] === "Tanggal Ambil" && row[2] === "Solar" && row[3] === "No Petak");
@@ -18,6 +38,12 @@ export function createWithdrawalWrite(values: unknown[][], input: WithdrawalValu
   const cell = (value: string | number) => ({ userEnteredValue: typeof value === "number" ? { numberValue: value } : { stringValue: value } });
   const requests: object[] = [];
   if (lastRow > sheet.rowCount) requests.push({ appendDimension: { sheetId: sheet.sheetId, dimension: "ROWS", length: lastRow - sheet.rowCount } });
+  if (plan.kind === "new-month") {
+    const headerIndex = values.findIndex((row) => row[0] === "No" && row[1] === "Tanggal Ambil" && row[2] === "Solar" && row[3] === "No Petak");
+    for (const [sourceRow, destinationRow] of [[headerIndex, plan.headerRow - 1], [headerIndex + 1, plan.dataRow - 1]]) {
+      requests.push({ copyPaste: { source: { sheetId: sheet.sheetId, startRowIndex: sourceRow, endRowIndex: sourceRow + 1, startColumnIndex: 0, endColumnIndex: 6 }, destination: { sheetId: sheet.sheetId, startRowIndex: destinationRow, endRowIndex: destinationRow + 1, startColumnIndex: 0, endColumnIndex: 6 }, pasteType: "PASTE_FORMAT" } });
+    }
+  }
   if (plan.kind === "new-month") requests.push({ updateCells: { start: { sheetId: sheet.sheetId, rowIndex: plan.headerRow - 1, columnIndex: 0 }, rows: [{ values: ["No", "Tanggal Ambil", "Solar", "No Petak", "Harga Solar", "Biaya Solar"].map(cell) }], fields: "userEnteredValue" } });
   requests.push({ updateCells: { start: { sheetId: sheet.sheetId, rowIndex: plan.dataRow - 1, columnIndex: 0 }, rows: [{ values: rowValues.map(cell) }], fields: "userEnteredValue" } });
   requests.push({ repeatCell: { range: { sheetId: sheet.sheetId, startRowIndex: plan.dataRow - 1, endRowIndex: plan.dataRow, startColumnIndex: 1, endColumnIndex: 2 }, cell: { userEnteredFormat: { numberFormat: { type: "DATE", pattern: "dd/mmm/yyyy" } } }, fields: "userEnteredFormat.numberFormat" } });

@@ -1,5 +1,5 @@
 import { normalizePlotCode, parseOverviewNumber } from "../../dashboard/lib/normalize-overview";
-import type { FinanceCell, FinanceIssue, FinanceMerge, FinanceRecord, RawFinanceRow } from "../types";
+import { allOverviewWorksheet, type FinanceCell, type FinanceIssue, type FinanceMerge, type FinanceRecord, type RawFinanceRow } from "../types";
 
 const blank = (v: FinanceCell) => v == null || (typeof v === "string" && !v.trim());
 const id = (v: FinanceCell) => typeof v === "string" || (typeof v === "number" && Number.isFinite(v)) ? String(v).trim() || null : null;
@@ -44,12 +44,15 @@ export function normalizeFinance(rows: readonly RawFinanceRow[], options: { work
     const pricePerHa = parseNumber(4, "Harga per ha", true);
     const pricePerPlot = parseNumber(5, "Harga per petak", true);
     const fuelPrice = parseNumber(6, "Harga solar", true);
-    const fuelRefill = parseNumber(7, "Pengisian solar");
+    const fuelRefill = parseNumber(7, "Volume solar");
     const recordedFuelCost = parseNumber(8, "Pengeluaran solar", true);
     const grossValue = parseNumber(9, "Pendapatan kotor", true);
     const sourceNetValue = parseNumber(10, "Pendapatan bersih sumber", true, true);
     let fuelCost = recordedFuelCost;
-    if (fuelRefill === null || fuelPrice === null || recordedFuelCost === null) {
+    if (worksheet === allOverviewWorksheet || worksheet === "Version 3.0 testing") {
+      fuelCost = recordedFuelCost;
+      if (fuelCost === null) issues.push({ code: "incomplete_fuel_cost", worksheet, row, message: "Total biaya solar tidak tersedia pada snapshot sumber." });
+    } else if (fuelRefill === null || fuelPrice === null || recordedFuelCost === null) {
       fuelCost = null;
       issues.push({ code: "incomplete_fuel_cost", worksheet, row, message: "Biaya solar belum terverifikasi karena harga, volume, atau pengeluaran tidak tersedia." });
     } else if (Math.abs(fuelRefill * fuelPrice - recordedFuelCost) > 0.01) {

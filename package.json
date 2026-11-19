@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "tsc -p tsconfig.test.json && node --conditions=react-server --test .test-build/dashboard/tests/*.test.js",
     "verify:sheets": "tsc -p tsconfig.test.json && node --conditions=react-server scripts/verify-sheets.mjs",
+    "verify:crud-testing": "node scripts/verify-crud-testing.mjs",
     "verify:finance": "tsc -p tsconfig.test.json && node --conditions=react-server scripts/verify-finance.mjs"
   },
   "dependencies": {
@@ -20,7 +21,7 @@
     "date-fns": "^4.4.0",
     "google-auth-library": "^11.3.2",
     "lucide-react": "^1.64.0",
-    "next": "16.4.3",
+    "next": "16.4.6",
     "next-auth": "^5.0.0-beta.32",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -35,7 +36,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.3",
+    "eslint-config-next": "16.4.6",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -61,3 +61,11 @@ export function planFuelPriceActivation(values: unknown[][], row: number, date: 
   if (record.active) return { ok: false as const, reason: "Harga ini sudah aktif." };
   return { ok: true as const, row };
 }
+
+export function planFuelPriceMutation(values: unknown[][], operation: { row: number; date: string; expectedPrice: number; kind: "edit" | "delete" }) {
+  const catalog = parseFuelPriceCatalog(values);
+  if (catalog.issues.length) return { ok: false as const, reason: "Tabel harga memiliki kesalahan; periksa sumber terlebih dahulu." };
+  const record = catalog.records.find((entry) => entry.sourceRow === operation.row);
+  if (!record || record.effectiveDate !== operation.date || record.rupiahPerLiter !== operation.expectedPrice) return { ok: false as const, reason: "Data harga sudah berubah. Muat ulang halaman." };
+  return { ok: true as const, row: record.sourceRow, record };
+}

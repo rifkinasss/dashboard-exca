@@ -5,7 +5,11 @@ import { SourceStatus } from "@/features/dashboard/components/source-status";
 import { getDashboardData } from "@/features/dashboard/data/server/dashboard-source";
 import { getFuelWithdrawals } from "@/features/dashboard/data/server/fuel-withdrawal-source";
 import { defaultFilters } from "@/features/dashboard/lib/overview";
+import { plot2026Worksheet } from "@/features/management/lib/plot-sheet";
+import { plotWorksheetName } from "@/features/management/data/server/plot-sheet-source";
 import Loading from "../../loading";
+
+export const metadata = { title: "Dashboard Operasional" };
 
 async function DashboardContent() {
   await connection();
@@ -30,6 +34,7 @@ async function DashboardContent() {
       plotCodeMerges={data.plotCodeMerges}
       spkMerges={data.spkMerges}
       initialFilters={initialFilters}
+      annualPlotPeriod={plotWorksheetName(process.env) === plot2026Worksheet}
     />
   );
 }

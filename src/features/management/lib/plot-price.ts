@@ -15,16 +15,22 @@ export function parsePlotPrices(values: unknown): PlotPrice[] {
   });
 }
 
-export function calculatePlotPrice(prices: PlotPrice[] | null, plot: { code: string; spks: string[]; area: number | null; areaRequiresReview: boolean }) {
+export function calculatePlotPrice(prices: PlotPrice[] | null, plot: { code: string; spks: string[]; area: number | null; areaRequiresReview: boolean }, operationalPricePerHa?: number | null) {
+  if (operationalPricePerHa !== undefined) return calculateFromRate(operationalPricePerHa, plot);
   if (!prices || plot.spks.length !== 1 || plot.area === null || !Number.isFinite(plot.area) || plot.area <= 0 || plot.areaRequiresReview) return null;
   const candidates = prices.filter((price) => price.plot === plot.code.trim().toUpperCase());
   if (candidates.some((price) => !price.spk)) return null;
   const matches = candidates.filter((price) => price.spk === plot.spks[0]);
   if (matches.length !== 1 || matches[0].pricePerHa === null) return null;
-  const amount = matches[0].pricePerHa * plot.area;
+  return calculateFromRate(matches[0].pricePerHa, plot);
+}
+
+function calculateFromRate(pricePerHa: number | null, plot: { area: number | null; areaRequiresReview: boolean }) {
+  if (pricePerHa === null || !Number.isFinite(pricePerHa) || pricePerHa <= 0 || plot.area === null || !Number.isFinite(plot.area) || plot.area <= 0 || plot.areaRequiresReview) return null;
+  const amount = pricePerHa * plot.area;
   if (!Number.isFinite(amount)) return null;
   const taxResult = calculateTwoPercentTax(amount);
   if (!taxResult) return null;
-  return { amount, ...taxResult, pricePerHa: matches[0].pricePerHa, area: plot.area };
+  return { amount, ...taxResult, pricePerHa, area: plot.area };
 }
 

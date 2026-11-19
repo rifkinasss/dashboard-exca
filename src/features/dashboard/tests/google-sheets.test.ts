@@ -65,6 +65,41 @@ test("worksheet absence and incompatible locale fail without fallback or locale 
   await assert.rejects(readGoogleOverview(config, async () => ({ ...metadata, properties: { locale: "en_US" } })), (error: unknown) => error instanceof SheetsSyncError && error.info.category === "source_format");
 });
 
+test("worksheet 2026 reads plot blocks through December while retaining activity row positions", async () => {
+  const annual = { ...config, worksheet: "2026" };
+  const values = [
+    [null, null, "Rekap Oktober–Desember 2026"],
+    ["No. SPK", null, 12345],
+    ["Kode Petak", null, "P-01"],
+    ["Harga Petak / Ha", null, 1000],
+    ["Total Nilai Petak"],
+    ["Luas Petak", null, 8.6],
+    ["Total Konsumsi Solar", null, 20],
+    [],
+    [headers[0], ...headers.slice(5)],
+    [1, 46296, 0, 1, 1, 1, 10, 10, 10, 0, "Mulai Garap Petak"],
+    [2],
+    [3, "31/12/2026", 1, 2, 1, 1, 10, 10, 10, 0, "Garap Petak Selesai"],
+    [4, "01/01/2027", 2, 3, 1],
+    ["Total"],
+    ["Rata-Rata"],
+  ];
+  let calls = 0;
+  const result = await readGoogleOverview(annual, async (url, params) => {
+    if (++calls === 1) return { ...metadata, sheets: [{ properties: { title: annual.worksheet } }] };
+    assert.match(decodeURIComponent(url), /'2026'!A:L$/);
+    assert.equal(params.valueRenderOption, "UNFORMATTED_VALUE");
+    return { values };
+  });
+  const view = buildDashboardViewModel(result.rows, { ...defaultFilters, startDate: "", endDate: "" }, { worksheetName: result.worksheet });
+  assert.deepEqual(view.records.map(({ source, date }) => [source.worksheet, source.row, date]), [
+    ["2026", 10, "2026-10-01"], ["2026", 12, "2026-12-31"],
+  ]);
+  assert.equal(view.records[0].spkNumber, "12345");
+  assert.equal(view.records[0].totalFuelConsumption, 20);
+  assert.equal(view.summary.totals.fuel, 20);
+});
+
 test("worksheet names with apostrophes use escaped A1 notation", async () => {
   const special = { ...config, worksheet: "Area's Overview" };
   let count = 0;

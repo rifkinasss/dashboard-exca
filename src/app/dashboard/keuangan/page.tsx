@@ -5,6 +5,8 @@ import { getFinanceData } from "@/features/finance/data/server/finance-source";
 import { DashboardLoading } from "@/components/layout/dashboard-loading";
 import { FinanceDashboard } from "@/features/finance/components/finance-dashboard";
 
+export const metadata = { title: "Dashboard Keuangan" };
+
 async function FinanceContent() {
   await connection();
   const [finance, operational] = await Promise.all([getFinanceData(), getDashboardData()]);

@@ -1,4 +1,5 @@
 import { isValid, parseISO } from "date-fns";
+import { plot2026Worksheet } from "../../management/lib/plot-sheet";
 import {
   overviewColumns, workStatuses, type CellState, type DataQualityIssue,
   type NumberPolicy, type OverviewRecord, type ProcessingOptions, type RawCell, type RawOverviewRow,
@@ -81,7 +82,8 @@ export function normalizeOverview(rows: readonly RawOverviewRow[], options: Proc
     if (rows.slice(start, end).some((row) => { const code = normalizePlotCode(row[2]); return code.state === "invalid" || (code.state === "valid" && code.value !== anchor.value); })) return null;
     return { code: anchor.value, row: merge.startRow };
   };
-  const records = rows.map((raw, index): OverviewRecord => {
+  const records = rows.flatMap((raw, index): OverviewRecord[] => {
+    if (options.worksheetName === plot2026Worksheet && !raw.length) return [];
     const source = { worksheet: options.worksheetName ?? "Overview", row: firstDataRow + index };
     const spkRanges = (options.spkMerges ?? []).filter((merge) => Number.isSafeInteger(merge.startRow) && Number.isSafeInteger(merge.endRow) && merge.startRow >= firstDataRow && merge.endRow >= merge.startRow && source.row >= merge.startRow && source.row <= merge.endRow);
     const range = spkRanges[0];
@@ -122,7 +124,7 @@ export function normalizeOverview(rows: readonly RawOverviewRow[], options: Proc
     if (ambiguous) issues.push({ source, field: "spkNumber", severity: "warning", code: "metadata_conflict", message: "Nomor SPK pada rentang sel gabungan ambigu dan tidak digunakan.", relatedRows: spkRanges.map((merge) => merge.startRow) });
     else if (cells.spkNumber.state === "missing" && cells.plotCode.state === "valid") issues.push({ source, field: "spkNumber", severity: "warning", code: "missing_value", message: "Nomor SPK belum tersedia; aktivitas tidak dikaitkan dengan SPK lain." });
     if (raw.length > overviewColumns.length) issues.push({ source, field: null, severity: "warning", code: "column_count", message: "Kolom setelah P tidak dipakai; baris mentah tetap disimpan." });
-    return {
+    return [{
       no: cells.no.value, spkNumber: cells.spkNumber.value, plotCode: cells.plotCode.value ?? "", plotArea: cells.plotArea.value,
       totalFuelConsumption: cells.totalFuelConsumption.value, date: cells.date.value,
       hmStart: cells.hmStart.value, hmEnd: cells.hmEnd.value, workingHours: cells.workingHours.value,
@@ -130,7 +132,7 @@ export function normalizeOverview(rows: readonly RawOverviewRow[], options: Proc
       fuelPerHour: cells.fuelPerHour.value, actualFuelUsage: cells.actualFuelUsage.value,
       remainingFuel: cells.remainingFuel.value, workStatus: cells.workStatus.value, notes: cells.notes.value,
       source, plotCodeSource: cells.plotCode.state === "valid" ? { worksheet: source.worksheet, row: inheritedPlot?.row ?? source.row } : null, spkSource: cells.spkNumber.state === "valid" ? { worksheet: source.worksheet, row: inheritedSpk?.row ?? source.row } : null, raw: [...raw], cellStates,
-    };
+    }];
   });
   return { records, issues };
 }

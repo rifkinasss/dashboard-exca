@@ -23,7 +23,15 @@
 
 # misc
 .DS_Store
+
+# local credentials
 *.pem
+*.key
+*.p12
+*.pfx
+/.clasprc.json
+/credentials/
+service-account*.json
 
 # debug
 npm-debug.log*
@@ -31,8 +39,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# local environment files and the shared template
 .env*
+!/.env.example
 /env
 
 # vercel
@@ -45,3 +54,5 @@ next-env.d.ts
 # Local validation artifacts
 .test-build/
 .taste-skill/
+/anti-slop/
+/artifacts/financial-visual-qa/

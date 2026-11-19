@@ -39,6 +39,8 @@ export function createDashboardSource(config: DashboardSourceConfig, load?: () =
 
 // shortcut: cache is per server process; use a shared store if deployment needs cross-instance synchronization.
 let source: (() => Promise<DashboardData>) | undefined;
+export function invalidateDashboardData() { source = undefined; }
+
 export async function getDashboardData(): Promise<DashboardData> {
   try {
     source ??= createDashboardSource(readSourceConfig(process.env));

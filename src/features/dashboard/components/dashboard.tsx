@@ -13,6 +13,7 @@ import { KpiCards } from "./kpi-cards";
 import { Charts } from "./charts";
 import { PlotSummary } from "./plot-summary";
 import { summarizeFuelWithdrawals, type FuelWithdrawalData } from "../lib/fuel-withdrawals";
+import { plot2026Period, plot2026Worksheet } from "../../management/lib/plot-sheet";
 import { SourceStatus } from "./source-status";
 
 export function Dashboard({
@@ -22,6 +23,7 @@ export function Dashboard({
   plotCodeMerges,
   spkMerges,
   initialFilters = defaultFilters,
+  annualPlotPeriod = false,
 }: {
   rows: readonly RawOverviewRow[];
   withdrawals: FuelWithdrawalData | null;
@@ -29,6 +31,7 @@ export function Dashboard({
   plotCodeMerges?: readonly PlotCodeMerge[];
   spkMerges?: readonly PlotCodeMerge[];
   initialFilters?: DashboardFilters;
+  annualPlotPeriod?: boolean;
 }) {
   const [filters, setFilters] = useState(initialFilters);
   const [showAllPlots, setShowAllPlots] = useState(true);
@@ -61,6 +64,9 @@ export function Dashboard({
     [rows, filters, worksheetName, plotCodeMerges, spkMerges],
   );
   const { summary, plotCodes } = view;
+  const periods = annualPlotPeriod || worksheetName === plot2026Worksheet
+    ? [...new Set([...view.periods, plot2026Period.start.slice(0, 7), "2026-11", plot2026Period.end.slice(0, 7)])].sort()
+    : view.periods;
   const withdrawalSummary = summarizeFuelWithdrawals(withdrawals, filters, plotCodes);
   return (
     <div className="dashboard-shell">
@@ -79,7 +85,7 @@ export function Dashboard({
         value={filters}
         plotCodes={plotCodes}
         spkOptions={view.spkOptions}
-        periods={view.periods}
+        periods={periods}
         initialFilters={initialFilters}
         onChange={changeFilters}
         onReset={() => changeFilters(initialFilters)}

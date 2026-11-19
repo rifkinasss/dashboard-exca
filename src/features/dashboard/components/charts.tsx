@@ -13,7 +13,8 @@ import { fuelByPlot, monitoringTrend } from "../lib/interactive-monitoring";
 import { formatDate, formatNumber } from "../lib/format";
 import { fuelWithdrawalDifference } from "../lib/fuel-withdrawals";
 
-const orange = "var(--primary)";
+const primaryColor = "var(--primary)";
+const secondaryColor = "var(--chart-secondary)";
 const axis = { tickLine: false, axisLine: false, tick: { fill: "#64748B", fontSize: 12 } };
 const tooltipStyle = { border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12, color: "#334155" };
 const subscribe = () => () => {};
@@ -73,7 +74,7 @@ export function Charts({ summary, rows, inventory, summaryPanel, withdrawals }: 
             <XAxis dataKey="code" {...axis} tickMargin={10} />
             <YAxis {...axis} width={46} tickFormatter={formatNumber} />
             <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "#FFF7ED" }} formatter={(value) => [`${formatNumber(typeof value === "number" ? value : null)} L`, "Solar riil"]} />
-            <Bar dataKey="fuel" fill={orange} maxBarSize={34} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
+            <Bar dataKey="fuel" fill={primaryColor} maxBarSize={34} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
           </BarChart>
         </ResponsiveContainer>
       </ChartPanel>
@@ -86,8 +87,8 @@ export function Charts({ summary, rows, inventory, summaryPanel, withdrawals }: 
             <YAxis yAxisId="fuel" {...axis} width={46} tickFormatter={formatNumber} label={{ value: "L", position: "insideTopLeft" }} />
             <YAxis yAxisId="hours" orientation="right" {...axis} width={46} tickFormatter={formatNumber} label={{ value: "jam", position: "insideTopRight" }} />
             <Tooltip content={({ active, payload }) => { const point = payload?.[0]?.payload as typeof trend[number] | undefined; return active && point ? <div className="trend-tooltip"><strong>{formatDate(point.date)}{point.endDate !== point.date ? ` – ${formatDate(point.endDate)}` : ""}</strong><br />Petak: {point.plots || "tidak ada aktivitas"}<br />Solar: {formatNumber(point.fuel)} L<br />HM: {formatNumber(point.hours)} jam</div> : null; }} />
-            <Line yAxisId="fuel" type="linear" dataKey="fuel" name="Solar" stroke={orange} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
-            <Line yAxisId="hours" type="linear" dataKey="hours" name="HM" stroke="#2563EB" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
+            <Line yAxisId="fuel" type="linear" dataKey="fuel" name="Solar" stroke={primaryColor} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
+            <Line yAxisId="hours" type="linear" dataKey="hours" name="HM" stroke={secondaryColor} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
           </LineChart>
         </ResponsiveContainer>}</div>
         <ul className="trend-legend" aria-label="Legenda grafik tren">
@@ -111,8 +112,8 @@ export function Charts({ summary, rows, inventory, summaryPanel, withdrawals }: 
               <XAxis dataKey="code" {...axis} tickMargin={10} />
               <YAxis {...axis} width={46} tickFormatter={formatNumber} />
               <Tooltip cursor={{ fill: "#FFF7ED" }} content={({ active, label }) => { const plot = fuelComparison.find((item) => item.code === String(label)); return active && plot ? <div className="trend-tooltip"><strong>{plot.code}</strong><br />Pengisian periode: {formatNumber(plot.refill)} L<br />Total konsumsi sumber: {formatNumber(plot.consumption)} L</div> : null; }} />
-              <Bar dataKey="refill" name="Total pengisian" fill="#2563EB" maxBarSize={30} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
-              <Bar dataKey="consumption" name="Total konsumsi" fill={orange} maxBarSize={30} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
+              <Bar dataKey="refill" name="Total pengisian" fill={secondaryColor} maxBarSize={30} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
+              <Bar dataKey="consumption" name="Total konsumsi" fill={primaryColor} maxBarSize={30} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>}
         </CardContent>
@@ -159,7 +160,7 @@ function HorizontalChart({ plots, dataKey, unit, reducedMotion }: {
         <XAxis type="number" {...axis} tickFormatter={formatNumber} />
         <YAxis type="category" dataKey="code" {...axis} width={70} interval={0} />
         <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "#FFF7ED" }} formatter={(value) => [`${formatNumber(typeof value === "number" ? value : null)} ${unit}`, dataKey === "hours" ? "HM kerja" : "Konsumsi"]} />
-        <Bar dataKey={dataKey} fill={dataKey === "hours" ? "#2563EB" : orange} barSize={10} radius={[0, 3, 3, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out">
+        <Bar dataKey={dataKey} fill={dataKey === "hours" ? secondaryColor : primaryColor} barSize={10} radius={[0, 3, 3, 0]} isAnimationActive={!reducedMotion} animationDuration={650} animationEasing="ease-out">
           <LabelList dataKey={dataKey} position="right" offset={7} fill="#334155" fontSize={12} formatter={(value: unknown) => typeof value === "number" && Number.isFinite(value) ? formatNumber(value) : ""} />
         </Bar>
       </BarChart>

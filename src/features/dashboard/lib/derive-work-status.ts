@@ -1,7 +1,7 @@
 import type { OverviewRecord } from "../types";
 import { validDate } from "./normalize-overview";
 
-export function deriveWorkStatus(records: readonly OverviewRecord[], sheetOrderConfirmed = false) {
+export function deriveWorkStatus(records: readonly Pick<OverviewRecord, "date" | "workStatus" | "source">[], sheetOrderConfirmed = false) {
   const known = records.filter((row) => validDate(row.date) && row.workStatus !== null);
   const latestDate = known.reduce<string | null>((date, row) => date === null || row.date! > date ? row.date : date, null);
   const latest = known.filter((row) => row.date === latestDate).sort((a, b) => b.source.row - a.source.row);

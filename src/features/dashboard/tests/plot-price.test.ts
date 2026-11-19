@@ -18,6 +18,12 @@ test("plot value uses the matching plot and SPK price and verified area", () => 
   assert.deepEqual(calculatePlotPrice(prices, plot), { amount: 35955740, tax: 719114.8, afterTax: 35236625.2, pricePerHa: 4180900, area: 8.6 });
 });
 
+test("plot value uses the operational sheet price without requiring an SPK", () => {
+  const operationalPlot = { ...plot, spks: [], area: 8.9 };
+  assert.deepEqual(calculatePlotPrice(null, operationalPlot, 4910200), { amount: 43700780, tax: 874015.6, afterTax: 42826764.4, pricePerHa: 4910200, area: 8.9 });
+  assert.equal(calculatePlotPrice(null, { ...operationalPlot, areaRequiresReview: true }, 4910200), null);
+});
+
 test("missing or ambiguous price, SPK and area do not produce a value", () => {
   const row = [1, "5123120254", "72A1/J54", 4180900];
   const prices = parsePlotPrices([header, row]);

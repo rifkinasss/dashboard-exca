@@ -3,6 +3,8 @@ import { JWT } from "google-auth-library";
 import { overviewColumns, type PlotCodeMerge, type RawCell, type RawOverviewRow } from "../../types";
 import type { GoogleSheetsConfig } from "./config";
 import { SheetsSyncError } from "./sync-error";
+import { isPlot2026Date, parsePlotSheet, plot2026Worksheet } from "../../../management/lib/plot-sheet";
+import { parseOverviewDate } from "../../lib/normalize-overview";
 
 export const sheetsReadScope = "https://www.googleapis.com/auth/spreadsheets.readonly";
 export type SheetsRequest = (url: string, params: Record<string, string>) => Promise<unknown>;
@@ -38,6 +40,11 @@ export async function readGoogleOverview(config: GoogleSheetsConfig, request: Sh
   const sheet = metadata.sheets.find((item) => isObject(item) && isObject(item.properties) && item.properties.title === config.worksheet);
   if (!isObject(sheet)) throw new SheetsSyncError("worksheet_missing");
   if (!["id_ID", "id-ID", "id"].includes(String(metadata.properties.locale))) throw new SheetsSyncError("source_format", { reason: "UNSUPPORTED_LOCALE" });
+  if (config.worksheet === plot2026Worksheet) {
+    const range = `'${plot2026Worksheet}'!A:L`;
+    const payload = await request(`${base}/values/${encodeURIComponent(range)}`, { majorDimension: "ROWS", valueRenderOption: "UNFORMATTED_VALUE" });
+    return { rows: mapPlot2026Overview(payload), worksheet: config.worksheet };
+  }
   const range = `'${config.worksheet.replaceAll("'", "''")}'!A:P`;
   const payload = await request(`${base}/values/${encodeURIComponent(range)}`, { majorDimension: "ROWS", valueRenderOption: "FORMATTED_VALUE" });
   const plotCodeMerges: PlotCodeMerge[] = [];
@@ -51,6 +58,39 @@ export async function readGoogleOverview(config: GoogleSheetsConfig, request: Sh
     if (start >= 1 && end > start + 1) (merge.startColumnIndex === 1 ? spkMerges : plotCodeMerges).push({ startRow: start + 1, endRow: end });
   }
   return { rows: mapOverviewValues(payload), worksheet: config.worksheet, plotCodeMerges, spkMerges };
+}
+
+function mapPlot2026Overview(payload: unknown): RawOverviewRow[] {
+  if (!isObject(payload) || (payload.majorDimension !== undefined && payload.majorDimension !== "ROWS")) throw new SheetsSyncError("malformed_response");
+  if (!Array.isArray(payload.values) || !payload.values.length) throw new SheetsSyncError("empty_worksheet");
+  const values = payload.values.map((row): RawCell[] => {
+    if (!Array.isArray(row) || row.length > 12 || !row.every(isCell)) throw new SheetsSyncError("malformed_response");
+    return row;
+  });
+  const plots = parsePlotSheet(values);
+  const plotActivityHeaders = [overviewColumns[0], ...overviewColumns.slice(5)];
+  if (!plots.length || plots.some((plot) => plotActivityHeaders.some(({ header }, index) => headerText(values[plot.sourceRow + 5]?.[index]) !== header))) {
+    throw new SheetsSyncError("headers_mismatch");
+  }
+
+  // Leave gaps for metadata, headers and totals so trace links keep their physical sheet rows.
+  const rows: RawOverviewRow[] = values.slice(1).map(() => []);
+  for (const plot of plots) {
+    const activities = plot.activities.flatMap((activity) => {
+      const raw = values[activity.sourceRow - 1];
+      const date = parseOverviewDate(typeof raw[1] === "number" ? activity.date : raw[1]);
+      return date.state === "valid" && !isPlot2026Date(date.value) ? [] : [{ activity, raw, date }];
+    });
+    const totalFuel = values[plot.sourceRow + 3]?.[2];
+    if (!activities.length) {
+      rows[plot.sourceRow - 2] = [null, plot.spk, plot.code, plot.area, totalFuel];
+    }
+    for (const [index, { activity, raw, date }] of activities.entries()) {
+      rows[activity.sourceRow - 2] = [raw[0], plot.spk, plot.code, index === 0 ? plot.area : null, index === 0 ? totalFuel : null,
+        date.value ?? raw[1], ...raw.slice(2, 12)];
+    }
+  }
+  return rows;
 }
 
 export function createSheetsRequest(config: GoogleSheetsConfig): SheetsRequest {

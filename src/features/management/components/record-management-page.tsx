@@ -8,15 +8,12 @@ import { defaultFilters } from "@/features/dashboard/lib/overview";
 import { formatNumber } from "@/features/dashboard/lib/format";
 import { getFinanceData } from "@/features/finance/data/server/finance-source";
 import { normalizeFinance } from "@/features/finance/lib/normalize-finance";
-import { relateFinance } from "@/features/finance/lib/relationships";
 import { FinanceRecordDirectory } from "@/features/finance/components/finance-record-directory";
 import { legacyPlotRouteId } from "../lib/plot-state";
 import { getFuelWithdrawals } from "@/features/dashboard/data/server/fuel-withdrawal-source";
 import { getFuelPriceCatalog } from "@/features/dashboard/data/server/fuel-price-source";
 import { selectPlotPurchasesOnDate } from "@/features/dashboard/lib/fuel-withdrawals";
 import { resolveWithdrawalPricing } from "@/features/dashboard/lib/fuel-price";
-import { getPlotPrices } from "../data/server/plot-price-source";
-import { buildManagementDirectory } from "../lib/build-management-directory";
 import { RecordDirectory, type ManagedRecord, type ManagedRecordKind } from "./record-directory";
 
 const allDates = { ...defaultFilters, startDate: "", endDate: "" };
@@ -32,11 +29,7 @@ async function RecordPageContent({ kind }: { kind: ManagedRecordKind }) {
     if (!data) return <main className="directory-main"><div className="directory-notice">Sumber Finance tidak tersedia pada konfigurasi demo. Data sintetis tidak ditampilkan sebagai sumber produksi.</div></main>;
     if (data.kind === "error") return <main className="directory-main"><SourceStatus status={data.status} /><div className="directory-notice">Data keuangan tidak ditampilkan karena worksheet belum berhasil dibaca.</div></main>;
     const normalized = normalizeFinance(data.rows, { worksheet: data.status.worksheet ?? "Overview Finance", spkMerges: data.spkMerges, plotCodeMerges: data.plotCodeMerges });
-    const [operation, purchases, priceCatalog, plotPrices] = await Promise.all([getDashboardData(), getFuelWithdrawals(), getFuelPriceCatalog(), getPlotPrices()]);
-    const operationView = operation.kind === "ready" && operation.status.source === "google-sheets" ? buildDashboardViewModel(operation.rows, allDates, { worksheetName: operation.status.worksheet ?? "Overview Operasional", spkMerges: operation.spkMerges, plotCodeMerges: operation.plotCodeMerges }) : null;
-    const eligibleRows = operationView ? relateFinance(normalized.records, operationView.validatedRecords).matched.map(({ record }) => record.row) : null;
-    const plots = operation.kind === "ready" && operation.status.source === "google-sheets" ? buildManagementDirectory(operation.rows, [], { operationWorksheet: operation.status.worksheet ?? "Overview Operasional", operationSpkMerges: operation.spkMerges, operationPlotMerges: operation.plotCodeMerges }).plots.map(({ code, spks, area, areaRequiresReview, campaignRequiresReview }) => ({ code, spks, area, areaRequiresReview, campaignRequiresReview })) : [];
-    return <main className="directory-main">{data.status.state !== "connected" && <SourceStatus status={data.status} />}<FinanceRecordDirectory records={normalized.records} eligibleRows={eligibleRows} purchases={purchases} priceCatalog={priceCatalog} plots={plots} plotPrices={plotPrices} /></main>;
+    return <main className="directory-main">{data.status.state !== "connected" && <SourceStatus status={data.status} />}<FinanceRecordDirectory records={normalized.records} /></main>;
   }
 
   const data = await getDashboardData();

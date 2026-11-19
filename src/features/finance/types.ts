@@ -22,3 +22,12 @@ export interface FinanceRecord {
   raw: RawFinanceRow;
 }
 export interface FinanceIssue { code: string; message: string; worksheet: string; row: number; relatedRows?: number[]; }
+
+export const allOverviewColumns = ["No", "No. SPK", "Dokumen SPK", "No. Berita Acara", "Dokumen Berita Acara", "No. Pencairan", "Bukti Pencairan", "Kode Petak", "Luas Petak (Ha)", "Harga Per Hektar", "Total Harga Per Petak", "Total Harga Setelah Pajak", "Total Konsumsi Solar", "Tanggal", "Pembelian Solar ( L )", "Harga Solar", "Total Harga Solar", "HM Awal", "HM Akhir", "HM Kerja (Jam)", "Est. Jam Kerja", "Pengisian Solar (L)", "Pemakaian Solar per Jam (L/Hr)", "Pemakaian Solar Riil (L)", "Status Pekerjaan", "Keterangan"] as const;
+
+export const allOverviewWorksheet = "All Overview";
+
+export function financeWorksheetName(value: string | undefined) {
+  const name = value?.trim();
+  return name === "Version 3.0 testing" || name === "Version 3.0 - testing" ? allOverviewWorksheet : name || "Overview Finance";
+}

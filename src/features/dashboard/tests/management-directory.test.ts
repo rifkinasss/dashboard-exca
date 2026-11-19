@@ -32,7 +32,7 @@ test("management read models preserve inventory, merge provenance, and canonical
   assert.equal(merged.refill, 10);
   assert.equal(merged.efficiency, 10 / 12);
   assert.deepEqual(merged.sourceRows, [2, 3, 4]);
-  assert.deepEqual(merged.areaSourceRows, [2, 3, 4]);
+  assert.deepEqual(merged.areaSourceRows, [2, 3, 4].map((row) => ({ worksheet: "Overview Operasional", row })));
   assert.deepEqual(merged.spkSourceRows, [2, 4]);
   assert.deepEqual(merged.plotCodeSourceRows, [2, 4]);
   assert.equal(merged.activityCount, 2);

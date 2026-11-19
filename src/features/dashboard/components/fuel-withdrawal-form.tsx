@@ -1,51 +1,56 @@
 "use client";
 
+import { Toast } from "@base-ui/react/toast";
+
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { saveFuelWithdrawal } from "../actions/save-fuel-withdrawal";
+import { editFuelWithdrawal, saveFuelWithdrawal } from "../actions/save-fuel-withdrawal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DraftModal, DraftPreview } from "@/features/management/components/draft-modal";
+import { DraftModal } from "@/features/management/components/draft-modal";
 import { validateFuelWithdrawalInput, type FuelWithdrawalInput } from "../lib/fuel-withdrawal-input";
 import { fuelPriceForDate, type FuelPriceCatalog } from "../lib/fuel-price";
 import { formatNumber } from "../lib/format";
+import type { FuelWithdrawal } from "../lib/fuel-withdrawals";
 
 const empty: FuelWithdrawalInput = { date: "", plotCode: "", liters: "" };
 
-export function FuelWithdrawalForm({ plotCodes, priceCatalog, authReady, writerReady, userEmail, onClose }: { plotCodes: string[]; priceCatalog: FuelPriceCatalog | null; authReady: boolean; writerReady: boolean; userEmail: string | null; onClose: () => void }) {
+export function FuelWithdrawalForm({ plotCodes, priceCatalog, authReady, writerReady, userEmail, onClose, record }: { plotCodes: string[]; priceCatalog: FuelPriceCatalog | null; authReady: boolean; writerReady: boolean; userEmail: string | null; onClose: () => void; record?: FuelWithdrawal }) {
   const router = useRouter();
-  const [draft, setDraft] = useState(empty);
+  const toast = Toast.useToastManager();
+  const initial = record ? { date: record.date, plotCode: record.plotCode, liters: String(record.liters).replace(".", ",") } : empty;
+  const [draft, setDraft] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [uncertain, setUncertain] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [preview, setPreview] = useState(false);
   const result = validateFuelWithdrawalInput(draft);
-  const price = fuelPriceForDate(priceCatalog, draft.date);
-  const estimatedCost = price && result.ok ? price.rupiahPerLiter * result.value.liters : null;
+  const sameDate = record?.date === draft.date;
+  const price = sameDate ? record.price : fuelPriceForDate(priceCatalog, draft.date)?.rupiahPerLiter ?? null;
+  const estimatedCost = price !== null && result.ok ? price * result.value.liters : null;
+  const differentMonth = Boolean(record && draft.date && draft.date.slice(0, 7) !== record.date.slice(0, 7));
   async function save() {
-    if (!price) return;
+    if ((!record && price === null) || (!sameDate && price === null) || !result.ok || saving || differentMonth) return;
     setSaving(true); setMessage("");
+    const toastId = toast.add({ title: "Memproses pembelian solar…", type: "loading", timeout: 0 });
     try {
-      const outcome = await saveFuelWithdrawal({ ...draft, expectedPrice: price.rupiahPerLiter });
+      const outcome = record ? await editFuelWithdrawal({ ...draft, expectedPrice: price }, record) : await saveFuelWithdrawal({ ...draft, expectedPrice: price });
+      toast.update(toastId, { title: outcome.ok ? "Berhasil" : outcome.message.includes("belum dapat dipastikan") || outcome.message.includes("belum pasti") ? "Hasil belum dapat dipastikan" : "Tidak berhasil", description: outcome.message, type: outcome.ok ? "success" : "error", timeout: 6000, priority: outcome.ok ? "low" : "high" });
       setMessage(outcome.message);
-      if (outcome.ok) { setDraft(empty); setPreview(false); setErrors([]); router.refresh(); }
+      if (outcome.ok) { onClose(); router.refresh(); }
       else if ("uncertain" in outcome && outcome.uncertain) setUncertain(true);
-    } catch { setUncertain(true); setMessage("Hasil penyimpanan belum dapat dipastikan. Periksa Google Sheets sebelum mencoba lagi agar tidak tercatat dua kali."); }
+    } catch { toast.update(toastId, { title: "Hasil belum dapat dipastikan", description: "Periksa data sebelum mencoba lagi.", type: "error", timeout: 0, priority: "high" }); setUncertain(true); setMessage("Hasil penyimpanan belum dapat dipastikan. Periksa Google Sheets sebelum mencoba lagi agar tidak tercatat dua kali."); }
     finally { setSaving(false); }
   }
-  function update(key: keyof FuelWithdrawalInput, value: string) { setDraft((current) => ({ ...current, [key]: value })); setPreview(false); }
-  function showPreview() { const checked = validateFuelWithdrawalInput(draft); setErrors(checked.ok ? [] : checked.errors); setPreview(checked.ok); }
-  return <DraftModal className="fuel-withdrawal-dialog" title="Tambah pembelian solar" description="Tinjau data pengambilan sebelum menyimpan." dirty={Object.values(draft).some(Boolean)} onClose={onClose} onReset={() => { setDraft(empty); setErrors([]); setPreview(false); }} onPreview={showPreview} onSave={save} saving={saving} saveDisabled={!writerReady || !userEmail || !preview || !result.ok || !price || estimatedCost === null || !Number.isFinite(estimatedCost) || uncertain} preview={preview && result.ok ? <DraftPreview title="Pratinjau pembelian" values={[["Tanggal", result.value.date], ["Kode petak", result.value.plotCode], ["Jumlah solar", `${formatNumber(result.value.liters)} L`], ["Harga solar", price ? `Rp ${formatNumber(price.rupiahPerLiter)} / L` : "Belum tersedia"], ["Biaya solar", estimatedCost !== null && Number.isFinite(estimatedCost) ? `Rp ${formatNumber(estimatedCost)}` : "Belum tersedia"]]} /> : null}>
+  function update(key: keyof FuelWithdrawalInput, value: string) { setDraft((current) => ({ ...current, [key]: value })); }
+  return <DraftModal className="fuel-withdrawal-dialog" title={record ? "Edit pembelian solar" : "Tambah pembelian solar"} description="Isi data pembelian solar." dirty={JSON.stringify(draft) !== JSON.stringify(initial)} onClose={onClose} onReset={() => setDraft(initial)} onSave={save} saving={saving} hideWhileSaving saveDisabled={!writerReady || !userEmail || !result.ok || differentMonth || (!sameDate && price === null) || (estimatedCost !== null && !Number.isFinite(estimatedCost)) || Boolean(record?.priceInvalid) || uncertain}>
     <div className="management-form-grid">
-      <label>Tanggal pengambilan <span className="management-required">Wajib</span><Input disabled={saving} type="date" value={draft.date} onChange={(event) => update("date", event.target.value)} /></label>
-      <label>Kode petak <span className="management-required">Wajib</span><Input disabled={saving} value={draft.plotCode} list="withdrawal-plot-codes" onChange={(event) => update("plotCode", event.target.value)} autoComplete="off" /><datalist id="withdrawal-plot-codes">{plotCodes.map((code) => <option value={code} key={code} />)}</datalist></label>
-      <label>Jumlah solar (L) <span className="management-required">Wajib</span><Input disabled={saving} inputMode="decimal" value={draft.liters} onChange={(event) => update("liters", event.target.value)} placeholder="Contoh: 150" /></label>
+      <label><span>Tanggal pengambilan <span className="management-required" aria-hidden="true">*</span></span><Input required disabled={saving} type="date" value={draft.date} onChange={(event) => update("date", event.target.value)} /></label>
+      <label><span>Kode petak <span className="management-required" aria-hidden="true">*</span></span><Input required disabled={saving} value={draft.plotCode} list="withdrawal-plot-codes" onChange={(event) => update("plotCode", event.target.value)} placeholder="Pilih atau ketik kode petak" autoComplete="off" /><datalist id="withdrawal-plot-codes">{plotCodes.map((code) => <option value={code} key={code} />)}</datalist></label>
+      <label><span>Jumlah solar (L) <span className="management-required" aria-hidden="true">*</span></span><Input required disabled={saving} inputMode="decimal" value={draft.liters} onChange={(event) => update("liters", event.target.value)} placeholder="Contoh: 150" /></label>
     </div>
-    <p className="management-form-hint">{price ? `Harga berlaku: Rp ${formatNumber(price.rupiahPerLiter)} / L${estimatedCost !== null && Number.isFinite(estimatedCost) ? ` · Estimasi biaya: Rp ${formatNumber(estimatedCost)}` : ""}.` : "Harga aktif belum tersedia untuk tanggal ini."} Harga dan biaya akan disimpan saat transaksi dicatat; bukan bukti pembayaran.</p>
-    {errors.length > 0 && <ul className="management-form-errors" role="alert">{errors.map((error) => <li key={error}>{error}</li>)}</ul>}
-    <p className="management-form-notice" role="status">{message || (!authReady ? "Login Google belum dikonfigurasi. Data hanya dapat dipratinjau." : !userEmail ? "Masuk dengan akun Google yang diizinkan untuk melanjutkan. Login memuat ulang halaman dan menghapus draft." : !writerReady ? `Masuk sebagai ${userEmail}. Penyimpanan belum dikonfigurasi.` : `Masuk sebagai ${userEmail}. Tinjau data sebelum menyimpan.`)}</p>
+    <div className="fuel-withdrawal-price" aria-live="polite"><span>Harga solar</span><strong>{price !== null ? `Rp ${formatNumber(price)} / L` : "Belum tersimpan"}</strong><span>Total biaya</span><strong>{estimatedCost !== null && Number.isFinite(estimatedCost) ? `Rp ${formatNumber(estimatedCost)}` : "—"}</strong><p>{differentMonth ? "Tanggal baru harus berada di bulan yang sama." : record?.priceInvalid ? "Harga transaksi perlu ditinjau sebelum diedit." : sameDate && price === null ? "Harga belum tersimpan pada transaksi ini." : !draft.date ? "Pilih tanggal untuk melihat harga yang berlaku." : price === null ? "Tidak ada harga yang disetujui untuk tanggal ini." : sameDate ? "Harga transaksi yang tersimpan tetap digunakan." : "Harga dan biaya dicatat bersama transaksi."}</p></div>
+    {(message || !authReady || !userEmail || !writerReady) && <p className="management-form-notice" role="status">{message || (!authReady ? "Login Google belum dikonfigurasi. Data belum dapat disimpan." : !userEmail ? "Akun dengan izin mencatat transaksi diperlukan untuk menyimpan." : "Penyimpanan belum dikonfigurasi.")}</p>}
     {authReady && !userEmail && <Button type="button" variant="outline" onClick={() => signIn("google", { redirectTo: "/solar" })}>Masuk dengan Google</Button>}
   </DraftModal>;
 }

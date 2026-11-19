@@ -1,67 +1,107 @@
 "use client";
 
-import { useState } from "react";
-import { FileCheck2, UploadCloud } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { Toast } from "@base-ui/react/toast";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatNumber } from "@/features/dashboard/lib/format";
+import { formatFuelPriceInput } from "@/features/dashboard/lib/fuel-price-input";
 import { parseOverviewNumber } from "@/features/dashboard/lib/normalize-overview";
-import { monitorConsumption } from "../lib/plot-workflow-input";
-import { DraftModal, DraftPreview } from "./draft-modal";
+import { DraftModal } from "./draft-modal";
+import { savePlot, savePlotSpk } from "../actions/save-plot";
 
 export interface PlotFormInitialValue { code: string; area: number | null; spks: string[] }
-type Draft = { code: string; area: string; spkNumber: string; activityDate: string; hmStart: string; hmEnd: string; hours: string; estimate: string; refill: string; status: string; notes: string; monitorStart: string; monitorEnd: string; startDate: string; endDate: string; beritaNumber: string; disbursementNumber: string };
-type FileKey = "spk" | "berita" | "disbursement" | "startPhoto" | "endPhoto";
-const blank: Draft = { code: "", area: "", spkNumber: "", activityDate: "", hmStart: "", hmEnd: "", hours: "", estimate: "", refill: "", status: "", notes: "", monitorStart: "", monitorEnd: "", startDate: "", endDate: "", beritaNumber: "", disbursementNumber: "" };
+type Draft = { code: string; area: string; spkNumber: string; pricePerHa: string };
+const blank: Draft = { code: "", area: "", spkNumber: "", pricePerHa: "" };
 const fromInitial = (initial: PlotFormInitialValue | null): Draft => ({ ...blank, code: initial?.code ?? "", area: initial?.area == null ? "" : String(initial.area).replace(".", ","), spkNumber: initial?.spks.length === 1 ? initial.spks[0] : "" });
 
-export function PlotFormDialog({ initial, initialDocument, existingPlotCodes, existingSpkNumbers, onClose }: { initial: PlotFormInitialValue | null; initialDocument?: "spk" | "berita" | "disbursement"; existingPlotCodes: string[]; existingSpkNumbers: string[]; onClose: () => void }) {
+export function PlotFormDialog({ initial, existingPlotCodes, writerReady = false, canWrite = false, authReady = false, userEmail = null, onClose }: { initial: PlotFormInitialValue | null; existingPlotCodes: string[]; writerReady?: boolean; canWrite?: boolean; authReady?: boolean; userEmail?: string | null; onClose: () => void }) {
+  const router = useRouter();
+  const toast = Toast.useToastManager();
   const seed = fromInitial(initial);
   const [draft, setDraft] = useState(seed);
-  const [files, setFiles] = useState<Partial<Record<FileKey, File>>>({});
-  const [fileErrors, setFileErrors] = useState<Partial<Record<FileKey, string>>>({});
-  const [dragging, setDragging] = useState<FileKey | null>(null);
-  const [fileKey, setFileKey] = useState(0);
-  const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const consumption = monitorConsumption(draft.monitorStart, draft.monitorEnd);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(seed) || Object.keys(files).length > 0;
-  function set(key: keyof Draft, value: string) { setDraft((current) => ({ ...current, [key]: value })); setPreview(false); }
-  function pick(key: FileKey, file?: File) {
-    const isImage = file?.type.startsWith("image/");
-    const isPdf = file?.type === "application/pdf" || file?.name.toLowerCase().endsWith(".pdf");
-    const photoOnly = key === "startPhoto" || key === "endPhoto";
-    if (file && !isImage && (photoOnly || !isPdf)) { setFileErrors((current) => ({ ...current, [key]: photoOnly ? "Pilih file gambar." : "Pilih file PDF atau gambar." })); return; }
-    setFileErrors((current) => ({ ...current, [key]: undefined }));
-    setFiles((current) => { const next = { ...current }; if (file) next[key] = file; else delete next[key]; return next; }); setPreview(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [uncertain, setUncertain] = useState(false);
+  const priceInput = useRef<HTMLInputElement>(null);
+  const priceCaret = useRef<number | null>(null);
+  const previewArea = parseOverviewNumber(draft.area, "id-ID");
+  const previewPrice = parseOverviewNumber(draft.pricePerHa, "id-ID");
+  const calculatedPreviewValue = previewPrice.state === "valid" && Number.isSafeInteger(previewPrice.value) && previewPrice.value > 0 && previewArea.state === "valid" && previewArea.value > 0 ? previewPrice.value * previewArea.value : null;
+  const previewValue = calculatedPreviewValue !== null && Number.isFinite(calculatedPreviewValue) ? calculatedPreviewValue : null;
+  useLayoutEffect(() => {
+    if (priceCaret.current !== null && document.activeElement === priceInput.current) priceInput.current?.setSelectionRange(priceCaret.current, priceCaret.current);
+    priceCaret.current = null;
+  });
+  const dirty = JSON.stringify(draft) !== JSON.stringify(seed);
+  function set(key: keyof Draft, value: string) { setDraft((current) => ({ ...current, [key]: value })); }
+  function reset() { setDraft(seed); setErrors([]); }
+  async function saveNewPlot() {
+    const code = draft.code.trim();
+    const spk = draft.spkNumber.trim();
+    const area = parseOverviewNumber(draft.area, "id-ID");
+    const price = parseOverviewNumber(draft.pricePerHa, "id-ID");
+    const issues = [];
+    if (!code) issues.push("Kode petak wajib diisi.");
+    if (spk && !/^[\p{L}\p{N}][\p{L}\p{N} /._-]{0,79}$/u.test(spk)) issues.push("Nomor SPK tidak valid.");
+    if (existingPlotCodes.some((value) => value.trim().toLocaleUpperCase("id-ID") === code.toLocaleUpperCase("id-ID"))) issues.push("Kode petak sudah terdaftar.");
+    if (area.state !== "valid" || area.value <= 0) issues.push("Luas petak wajib berupa angka lebih besar dari nol.");
+    if (price.state !== "valid" || !Number.isSafeInteger(price.value) || price.value <= 0) issues.push("Harga per hektar harus berupa Rupiah bulat lebih besar dari nol.");
+    setErrors(issues);
+    if (issues.length || area.state !== "valid" || price.state !== "valid" || saving) return;
+    setSaving(true); setMessage("");
+    const toastId = toast.add({ title: "Menyimpan petak…", type: "loading", timeout: 0 });
+    try {
+      const outcome = await savePlot({ code, spk, pricePerHa: draft.pricePerHa, area: draft.area });
+      toast.update(toastId, { title: outcome.ok ? "Berhasil" : outcome.uncertain ? "Hasil belum dapat dipastikan" : "Tidak berhasil", description: outcome.message, type: outcome.ok ? "success" : "error", timeout: 6000, priority: outcome.ok ? "low" : "high" });
+      setMessage(outcome.message);
+      if (outcome.ok) { router.refresh(); onClose(); }
+      else if (outcome.uncertain) setUncertain(true);
+    } catch {
+      toast.update(toastId, { title: "Hasil belum dapat dipastikan", description: "Periksa worksheet sebelum mencoba lagi.", type: "error", timeout: 0, priority: "high" });
+      setUncertain(true); setMessage("Hasil penyimpanan belum pasti. Periksa worksheet sebelum mencoba lagi.");
+    } finally { setSaving(false); }
   }
-  function reset() { setDraft(seed); setFiles({}); setFileErrors({}); setFileKey((value) => value + 1); setErrors([]); setPreview(false); }
-  function showPreview() {
-    const issues: string[] = [];
-    if (!draft.code.trim()) issues.push("Kode petak wajib diisi.");
-    if (existingPlotCodes.some((code) => code.trim().toLocaleUpperCase("id-ID") === draft.code.trim().toLocaleUpperCase("id-ID") && code !== initial?.code)) issues.push("Kode petak sudah terdaftar.");
-    const fields = [["Luas petak", draft.area], ["HM awal", draft.hmStart], ["HM akhir", draft.hmEnd], ["HM kerja", draft.hours], ["Estimasi jam kerja", draft.estimate], ["Pengisian solar", draft.refill]] as const;
-    for (const [label, value] of fields) if (value.trim()) { const number = parseOverviewNumber(value, "id-ID"); if (number.state !== "valid" || number.value < 0 || (label === "Luas petak" && number.value === 0)) issues.push(`${label} harus berupa angka yang valid${label === "Luas petak" ? " dan lebih besar dari nol" : " dan tidak negatif"}.`); }
-    const activity = [draft.hmStart, draft.hmEnd, draft.hours, draft.estimate, draft.refill, draft.status, draft.notes].some((value) => value.trim());
-    if (activity && !draft.activityDate) issues.push("Tanggal aktivitas wajib diisi jika aktivitas ditambahkan.");
-    const hmStart = parseOverviewNumber(draft.hmStart, "id-ID"), hmEnd = parseOverviewNumber(draft.hmEnd, "id-ID"), hours = parseOverviewNumber(draft.hours, "id-ID");
-    if (hmStart.state === "valid" && hmEnd.state === "valid") {
-      if (hmEnd.value < hmStart.value) issues.push("HM akhir tidak boleh lebih kecil dari HM awal.");
-      else if (hours.state === "valid" && Math.abs(hmEnd.value - hmStart.value - hours.value) > 1e-6) issues.push("HM kerja harus sesuai selisih HM akhir dan HM awal.");
-    }
-    if (consumption.error) issues.push(consumption.error);
-    if (draft.startDate && draft.endDate && draft.endDate < draft.startDate) issues.push("Tanggal monitor akhir tidak boleh sebelum tanggal awal.");
-    setErrors(issues); setPreview(issues.length === 0);
+  async function saveSpk() {
+    const spk = draft.spkNumber.trim();
+    if (!spk || !initial || initial.spks.length) return;
+    const code = initial.code;
+    setSaving(true); setMessage("");
+    const toastId = toast.add({ title: "Menambahkan nomor SPK…", type: "loading", timeout: 0 });
+    try {
+      const outcome = await savePlotSpk({ code, spk });
+      toast.update(toastId, { title: outcome.ok ? "Berhasil" : outcome.uncertain ? "Hasil belum dapat dipastikan" : "Tidak berhasil", description: outcome.message, type: outcome.ok ? "success" : "error", timeout: outcome.uncertain ? 0 : 6000, priority: outcome.ok ? "low" : "high" });
+      setMessage(outcome.message);
+      if (outcome.ok) { router.refresh(); onClose(); }
+      else if (outcome.uncertain) setUncertain(true);
+    } catch {
+      toast.update(toastId, { title: "Hasil belum dapat dipastikan", description: "Periksa worksheet sebelum mencoba lagi.", type: "error", timeout: 0, priority: "high" });
+      setUncertain(true); setMessage("Hasil penyimpanan belum pasti. Periksa worksheet sebelum mencoba lagi.");
+    } finally { setSaving(false); }
   }
-  const field = (key: keyof Draft, label: string, type = "text") => <label>{label}<Input type={type} inputMode={type === "text" && ["area", "hmStart", "hmEnd", "hours", "estimate", "refill", "monitorStart", "monitorEnd"].includes(key) ? "decimal" : undefined} value={draft[key]} onChange={(event) => set(key, event.target.value)} /></label>;
-  const upload = (key: FileKey, label: string, accept: string) => <div className="plot-upload"><label className={`plot-upload-drop${dragging === key ? " is-dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(key); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(null); }} onDrop={(event) => { event.preventDefault(); setDragging(null); if (event.dataTransfer.files.length !== 1) { setFileErrors((current) => ({ ...current, [key]: "Pilih satu file." })); return; } pick(key, event.dataTransfer.files[0]); }}><Input className="sr-only" key={`${key}-${fileKey}`} autoFocus={initialDocument === key} type="file" accept={accept} onChange={(event) => { if (event.target.files?.[0]) pick(key, event.target.files[0]); event.target.value = ""; }} />{files[key] ? <FileCheck2 aria-hidden="true" /> : <UploadCloud aria-hidden="true" />}<span className="plot-upload-title">{label}</span><span className="plot-upload-action">{files[key] ? "Ganti file" : "Pilih file atau seret ke sini"}</span><span className="plot-upload-hint">{files[key]?.name ?? (accept === "image/*" ? "Gambar" : "PDF atau gambar")}</span></label>{fileErrors[key] && <p className="plot-upload-error" role="alert">{fileErrors[key]}</p>}</div>;
-  return <DraftModal wide title={initial ? "Kelola petak lahan" : "Tambah petak lahan"} description="Isi data yang tersedia sekarang; bagian lain dapat dilengkapi nanti." dirty={dirty} onClose={onClose} onReset={reset} onPreview={showPreview} preview={preview ? <DraftPreview title="Pratinjau petak" values={[["Kode petak", draft.code], ["Luas petak", draft.area ? `${draft.area} Ha` : "Belum diisi"], ["Nomor SPK", draft.spkNumber || "Belum tersedia"], ["Tanggal aktivitas", draft.activityDate], ["Status pekerjaan", draft.status], ["Konsumsi monitor", consumption.value === null ? "Belum tersedia" : `${formatNumber(consumption.value)} L`], ["Dokumen dipilih", Object.values(files).map((file) => file.name).join(", ") || "Belum ada"]]} /> : null}>
-    <Alert><AlertDescription>Form ini masih pratinjau. Data dan file belum disimpan ke Google Sheets atau Google Drive.</AlertDescription></Alert>
-    <section className="management-form-section"><h3>Data petak</h3><div className="management-form-grid"><label><span>Kode petak <span className="management-required" aria-hidden="true">*</span></span><Input autoFocus={!initialDocument} required value={draft.code} onChange={(event) => set("code", event.target.value)} placeholder="Contoh: 72A1/J54" /></label>{field("area", "Luas petak (Ha) · opsional")}</div></section>
-    <details className="plot-workflow-section" open={initialDocument === "spk" || undefined}><summary>SPK & dokumen <span>Opsional</span></summary><div className="management-form-grid">{field("spkNumber", "Nomor SPK")}{upload("spk", "Dokumen SPK", ".pdf,image/*")}</div>{initial && initial.spks.length > 1 && <p className="management-form-hint">Petak memiliki beberapa SPK: {initial.spks.join(", ")}. Hubungan ini tidak diubah oleh draft.</p>}{draft.spkNumber && existingSpkNumbers.includes(draft.spkNumber.trim()) && <p className="management-form-hint">Nomor ini sudah tercatat pada sumber.</p>}</details>
-    <details className="plot-workflow-section"><summary>Aktivitas operasional <span>Opsional</span></summary><p className="management-form-hint">Satu catatan aktivitas untuk petak ini. Tanggal wajib diisi jika ada data aktivitas.</p><div className="management-form-grid">{field("activityDate", "Tanggal aktivitas", "date")}{field("hmStart", "HM awal")}{field("hmEnd", "HM akhir")}{field("hours", "HM kerja (jam)")}{field("estimate", "Estimasi jam kerja")}{field("refill", "Pengisian solar (L)")}<label>Status pekerjaan<select value={draft.status} onChange={(event) => set("status", event.target.value)}><option value="">Belum diketahui</option><option value="Mulai pengerjaan">Mulai Garap Petak</option><option value="Dalam pengerjaan">Garap Petak Berlangsung</option><option value="Selesai">Garap Petak Selesai</option></select></label><label>Keterangan<textarea rows={2} value={draft.notes} onChange={(event) => set("notes", event.target.value)} /></label></div></details>
-    <details className="plot-workflow-section"><summary>Monitor konsumsi solar <span>Opsional</span></summary><p className="management-form-hint">Angka kumulatif dalam liter. Konsumsi dihitung dari monitor akhir dikurangi awal.</p><div className="management-form-grid">{field("startDate", "Tanggal monitor awal", "date")}{field("monitorStart", "Angka monitor awal (L)")}{upload("startPhoto", "Foto monitor awal", "image/*")}{field("endDate", "Tanggal monitor akhir", "date")}{field("monitorEnd", "Angka monitor akhir (L)")}{upload("endPhoto", "Foto monitor akhir", "image/*")}</div><p className="management-form-hint">{consumption.error ?? (consumption.value === null ? "Isi kedua angka untuk menghitung konsumsi." : `Selisih monitor: ${formatNumber(consumption.value)} L`)}</p></details>
-    <details className="plot-workflow-section" open={initialDocument === "berita" || initialDocument === "disbursement" || undefined}><summary>Berita Acara & pencairan <span>Opsional</span></summary><div className="management-form-grid">{field("beritaNumber", "Nomor Berita Acara")}{upload("berita", "Dokumen Berita Acara", ".pdf,image/*")}{field("disbursementNumber", "Nomor pencairan")}{upload("disbursement", "Bukti pencairan", ".pdf,image/*")}</div></details>
+  function updatePrice(value: string, caret: number) { const formatted = formatFuelPriceInput(value, caret); priceCaret.current = formatted.caret; set("pricePerHa", formatted.value); }
+  if (initial) return <DraftModal className="plot-create-dialog" title="Tambahkan No. SPK" description={`Petak ${initial.code}`} dirty={dirty} onClose={onClose} onReset={reset} onSave={saveSpk} saving={saving} saveDisabled={!writerReady || !canWrite || uncertain || initial.spks.length > 0 || !draft.spkNumber.trim()}>
+    <section className="management-form-section"><h3>Nomor SPK</h3>{initial.spks.length ? <><p className="management-form-hint">SPK sudah tercatat dari sumber operasional: {initial.spks.join(", ")}. Hubungan tersebut tidak diubah di sini.</p><Input aria-label="Nomor SPK yang sudah tercatat" value={draft.spkNumber} disabled /></> : <><p className="management-form-hint">Petak boleh dikerjakan sebelum SPK terbit. Nomor SPK akan ditambahkan ke blok petak ini.</p><label><span>No. SPK <span className="management-required" aria-hidden="true">*</span></span><Input autoFocus required disabled={saving} value={draft.spkNumber} onChange={(event) => set("spkNumber", event.target.value)} placeholder="Contoh: 5123120254" /></label></>}</section>
+    {(message || !authReady || !userEmail || !writerReady || !canWrite) && <Alert role="status"><AlertDescription>{message || (!authReady ? "Login Google belum dikonfigurasi." : !userEmail ? "Masuk dengan akun administrator untuk menyimpan SPK." : !canWrite ? `Akun ${userEmail} tidak memiliki izin administrator.` : !writerReady ? `Masuk sebagai ${userEmail}. Penyimpanan worksheet testing belum dikonfigurasi.` : `Masuk sebagai ${userEmail}.`)}</AlertDescription></Alert>}
+    {uncertain && <Alert variant="destructive"><AlertDescription>Jangan simpan ulang sebelum memeriksa nomor SPK di worksheet.</AlertDescription></Alert>}
+  </DraftModal>;
+  if (!initial) return <DraftModal className="plot-create-dialog" title="Tambah petak lahan" description="Petak baru ditambahkan sebagai blok pada worksheet operasional." dirty={dirty} onClose={onClose} onReset={reset} onSave={saveNewPlot} saving={saving} saveDisabled={!writerReady || !canWrite || uncertain || !draft.code.trim() || !draft.pricePerHa.trim() || !draft.area.trim()}>
+    <section className="management-form-section"><h3>Data petak</h3><div className="management-form-grid"><label><span>No. SPK <span className="management-form-hint">· opsional, bisa ditambahkan nanti</span></span><Input disabled={saving} value={draft.spkNumber} onChange={(event) => set("spkNumber", event.target.value)} placeholder="Isi jika sudah tersedia" /></label><label><span>Kode petak <span className="management-required" aria-hidden="true">*</span></span><Input autoFocus required disabled={saving} value={draft.code} onChange={(event) => set("code", event.target.value)} placeholder="Contoh: 82B/J54" /></label><label><span>Harga petak / Ha (Rp) <span className="management-required" aria-hidden="true">*</span></span><Input ref={priceInput} required disabled={saving} inputMode="numeric" value={draft.pricePerHa} onChange={(event) => updatePrice(event.target.value, event.target.selectionStart ?? event.target.value.length)} placeholder="1.000.000" /></label><label><span>Luas petak (Ha) <span className="management-required" aria-hidden="true">*</span></span><Input required disabled={saving} inputMode="decimal" value={draft.area} onChange={(event) => set("area", event.target.value)} placeholder="Contoh: 27" /></label></div></section>
+    <section className="plot-create-preview" aria-label="Pratinjau blok petak"><header><strong>Pratinjau blok petak</strong><span>Berubah otomatis</span></header><table><tbody>
+      <tr><th>No. SPK</th><td colSpan={2}>{draft.spkNumber.trim() || "—"}</td></tr>
+      <tr><th>Kode Petak</th><td colSpan={2}>{draft.code.trim() || "—"}</td></tr>
+      <tr><th>Harga Petak / Ha</th><td colSpan={2}>{previewPrice.state === "valid" && Number.isSafeInteger(previewPrice.value) && previewPrice.value > 0 ? `Rp ${formatNumber(previewPrice.value)}` : "—"}</td></tr>
+      <tr><th>Total Nilai Petak</th><td colSpan={2} aria-live="polite">{previewValue === null ? "—" : `Rp ${formatNumber(previewValue)}`}</td></tr>
+      <tr><th>Luas Petak</th><td>{previewArea.state === "valid" && previewArea.value > 0 ? formatNumber(previewArea.value) : "—"}</td><td>Hektar</td></tr>
+      <tr><th>Total Konsumsi Solar</th><td>Menunggu aktivitas</td><td>Liter</td></tr>
+    </tbody></table><p>Harga diisi manual dalam Rupiah. Total nilai dihitung otomatis; konsumsi solar mengikuti aktivitas.</p></section>
     {errors.length > 0 && <Alert variant="destructive"><AlertDescription><ul>{errors.map((error) => <li key={error}>{error}</li>)}</ul></AlertDescription></Alert>}
+    {(message || !authReady || !userEmail || !writerReady || !canWrite) && <Alert role="status"><AlertDescription>{message || (!authReady ? "Login Google belum dikonfigurasi." : !userEmail ? "Masuk dengan akun administrator untuk menyimpan petak." : !canWrite ? `Akun ${userEmail} tidak memiliki izin administrator.` : !writerReady ? `Masuk sebagai ${userEmail}. Penyimpanan worksheet testing belum dikonfigurasi.` : `Masuk sebagai ${userEmail}.`)}</AlertDescription></Alert>}
+    {authReady && !userEmail && <Button type="button" variant="outline" onClick={() => signIn("google", { redirectTo: "/petak" })}>Masuk dengan Google</Button>}
+    {uncertain && <Alert variant="destructive"><AlertDescription>Jangan simpan ulang sebelum memeriksa apakah blok petak sudah muncul di worksheet.</AlertDescription></Alert>}
   </DraftModal>;
 }

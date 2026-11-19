@@ -1,29 +1,39 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { X } from "lucide-react";
+import { ArrowLeft, Eye, LoaderCircle, RotateCcw, Save, TriangleAlert, Trash2, X } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
-export function DraftModal({ title, description, dirty, wide = false, onClose, onReset, onPreview, children, preview, onSave, saving = false, saveDisabled = false, className = "" }: {
+export function DraftModal({ title, description, dirty, wide = false, onClose, onReset, onPreview, children, preview, onSave, saving = false, hideWhileSaving = false, suspend = false, saveDisabled = false, className = "" }: {
   title: string;
   description: string;
   dirty: boolean;
   wide?: boolean;
   onClose: () => void;
   onReset: () => void;
-  onPreview: () => void;
+  onPreview?: () => void;
   children: ReactNode;
-  preview: ReactNode | null;
+  preview?: ReactNode | null;
   onSave?: () => void;
   saving?: boolean;
+  hideWhileSaving?: boolean;
+  suspend?: boolean;
   saveDisabled?: boolean;
   className?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const fuelPurchase = className.split(" ").includes("fuel-withdrawal-dialog") && !className.split(" ").includes("fuel-price-dialog");
+  const fuelPrice = className.split(" ").includes("fuel-price-dialog");
+  const showActionIcons = fuelPurchase || fuelPrice || className.split(" ").includes("plot-create-dialog") || className.split(" ").includes("plot-entry-dialog") || className.split(" ").includes("spk-document-dialog");
   const [confirmClose, setConfirmClose] = useState(false);
   const cancelClose = useRef<HTMLButtonElement>(null);
-  useEffect(() => { if (dialog.current && !dialog.current.open) dialog.current.showModal(); }, []);
+  useEffect(() => {
+    const element = dialog.current;
+    if (!element) return;
+    if (suspend || (hideWhileSaving && saving)) { if (element.open) element.close(); }
+    else if (!element.open) element.showModal();
+  }, [hideWhileSaving, saving, suspend]);
   useEffect(() => { if (confirmClose) cancelClose.current?.focus(); }, [confirmClose]);
   function close() { dialog.current?.close(); onClose(); }
   function requestClose() {
@@ -35,8 +45,8 @@ export function DraftModal({ title, description, dirty, wide = false, onClose, o
   return <dialog ref={dialog} className={`management-form-dialog${wide ? " is-wide" : ""}${className ? ` ${className}` : ""}`} aria-labelledby="draft-modal-title" onCancel={(event) => { event.preventDefault(); requestClose(); }} onClick={(event) => { if (event.target === event.currentTarget) requestClose(); }}>
     <form className="management-form" noValidate onSubmit={(event) => event.preventDefault()}>
       <header><div><h2 id="draft-modal-title">{title}</h2><p>{description}</p></div><Button type="button" variant="ghost" size="icon" aria-label="Tutup form" disabled={saving} onClick={requestClose}><X /></Button></header>
-      <div className="management-form-content">{confirmClose ? <Alert><AlertTitle>Tutup tanpa menyimpan?</AlertTitle><AlertDescription>Perubahan pada draft ini akan hilang.</AlertDescription></Alert> : <>{children}{preview}</>}</div>
-      {confirmClose ? <footer><Button ref={cancelClose} type="button" variant="outline" onClick={() => setConfirmClose(false)}>Lanjutkan mengisi</Button><Button type="button" onClick={close}>Tutup draft</Button></footer> : <footer><Button type="button" variant="outline" disabled={saving} onClick={onReset}>Reset draft</Button><Button type="button" variant="outline" disabled={saving} onClick={onPreview}>Pratinjau</Button><Button type="button" variant="outline" disabled={saving} onClick={requestClose}>Batal</Button><Button type="button" disabled={!onSave || saving || saveDisabled} onClick={onSave}>{saving ? "Menyimpan…" : onSave ? "Simpan" : "Simpan · belum tersedia"}</Button></footer>}
+      <div className="management-form-content">{confirmClose ? <Alert>{showActionIcons && <TriangleAlert aria-hidden="true" />}<AlertTitle>Tutup tanpa menyimpan?</AlertTitle><AlertDescription>Perubahan pada draft ini akan hilang.</AlertDescription></Alert> : <>{children}{preview}</>}</div>
+      {confirmClose ? <footer><Button ref={cancelClose} type="button" variant="outline" onClick={() => setConfirmClose(false)}>{showActionIcons && <ArrowLeft data-icon="inline-start" aria-hidden="true" />}Lanjutkan mengisi</Button><Button type="button" variant={showActionIcons ? "destructive" : undefined} onClick={close}>{showActionIcons && <Trash2 data-icon="inline-start" aria-hidden="true" />}Tutup draft</Button></footer> : <footer><Button type="button" variant="outline" disabled={saving} onClick={onReset}>{showActionIcons && <RotateCcw aria-hidden="true" />}Reset draft</Button>{onPreview && <Button type="button" variant="outline" disabled={saving} onClick={onPreview}>{fuelPurchase && <Eye aria-hidden="true" />}Pratinjau</Button>}<Button type="button" variant="outline" disabled={saving} onClick={requestClose}>{showActionIcons && <X aria-hidden="true" />}Batal</Button><Button className={fuelPurchase ? "fuel-purchase-save" : undefined} type="button" disabled={!onSave || saving || saveDisabled} onClick={onSave}>{showActionIcons && (saving ? <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : <Save aria-hidden="true" />)}{saving ? "Menyimpan…" : onSave ? "Simpan" : "Simpan · belum tersedia"}</Button></footer>}
     </form>
   </dialog>;
 }

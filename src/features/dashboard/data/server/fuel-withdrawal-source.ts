@@ -2,6 +2,7 @@ import "server-only";
 import { parseFuelWithdrawals, type FuelWithdrawalData } from "../../lib/fuel-withdrawals";
 import { readSourceConfig } from "./config";
 import { createSheetsRequest } from "./google-sheets";
+import { fuelSheetConfig, sheetRange } from "../../lib/fuel-sheet-config";
 
 let cache: { data: FuelWithdrawalData; at: number } | null = null;
 let pending: Promise<FuelWithdrawalData | null> | null = null;
@@ -19,7 +20,7 @@ export async function getFuelWithdrawals(): Promise<FuelWithdrawalData | null> {
       const request = (async () => {
         const sheetsRequest = createSheetsRequest(config);
         const base = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}`;
-        const result = await sheetsRequest(`${base}/values/${encodeURIComponent("'Pengambilan Solar'!A4:F")}`, { majorDimension: "ROWS", valueRenderOption: "UNFORMATTED_VALUE" });
+        const result = await sheetsRequest(`${base}/values/${encodeURIComponent(sheetRange(fuelSheetConfig(process.env).withdrawal, "A4:F"))}`, { majorDimension: "ROWS", valueRenderOption: "UNFORMATTED_VALUE" });
         if (!result || typeof result !== "object" || !("values" in result)) throw new Error("Data tidak tersedia");
         const data = parseFuelWithdrawals(result.values);
         if (currentGeneration === generation) cache = { data, at: Date.now() };

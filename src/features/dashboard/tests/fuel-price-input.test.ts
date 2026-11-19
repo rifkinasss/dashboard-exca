@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatFuelPriceInput, planFuelPriceActivation, planFuelPriceInsert, validateFuelPriceInput } from "../lib/fuel-price-input";
+import { formatFuelPriceInput, planFuelPriceActivation, planFuelPriceInsert, planFuelPriceMutation, validateFuelPriceInput } from "../lib/fuel-price-input";
 
 test("formats rupiah input while preserving decimals and caret position", () => {
   assert.deepEqual(formatFuelPriceInput("24500", 5), { value: "24.500", caret: 6 });
@@ -33,4 +33,12 @@ test("activates only the exact existing inactive row", () => {
   assert.deepEqual(planFuelPriceActivation(values, 6, "2026-11-05", 27500), { ok: true, row: 6 });
   assert.equal(planFuelPriceActivation(values, 6, "2026-11-05", 28000).ok, false);
   assert.equal(planFuelPriceActivation(values, 5, "2026-10-05", 24500).ok, false);
+});
+
+test("edits and deletes only the exact existing price row", () => {
+  const values = [h, [1, 46300, 24500, true], [2, 46331, 27500, false]];
+  assert.equal(planFuelPriceMutation(values, { kind: "edit", row: 6, date: "2026-11-05", expectedPrice: 27500 }).ok, true);
+  assert.equal(planFuelPriceMutation(values, { kind: "edit", row: 6, date: "2026-11-05", expectedPrice: 28000 }).ok, false);
+  assert.equal(planFuelPriceMutation(values, { kind: "delete", row: 5, date: "2026-10-05", expectedPrice: 24500 }).ok, true);
+  assert.equal(planFuelPriceMutation(values, { kind: "delete", row: 6, date: "2026-11-05", expectedPrice: 27500 }).ok, true);
 });

@@ -18,7 +18,7 @@ export function isEmptyFuelPriceRow(row: readonly unknown[]) {
 }
 
 export function parseFuelPriceCatalog(master: unknown): FuelPriceCatalog {
-  if (!Array.isArray(master) || !Array.isArray(master[0]) || ["No", "Tanggal Berlaku", "Harga Solar per Liter", "Status", "Keterangan"].some((name, i) => master[0][i] !== name)) return { prices: [], records: [], issues: ["Header tabel harga di Pengambilan Solar tidak sesuai."] };
+  if (!Array.isArray(master) || !Array.isArray(master[0]) || ["No", "Tanggal Berlaku", "Harga Solar per Liter", "Status", "Keterangan"].some((name, i) => master[0][i] !== name)) return { prices: [], records: [], issues: ["Header tabel harga tidak sesuai."] };
   const issues: string[] = [];
   const seen = new Set<string>();
   const records: FuelPriceRecord[] = [];

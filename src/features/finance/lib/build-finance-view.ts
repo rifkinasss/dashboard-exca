@@ -4,8 +4,8 @@ import { normalizeFinance } from "./normalize-finance";
 import { relateFinance } from "./relationships";
 import { buildDailyEstimate } from "./daily-estimate";
 
-export function buildFinanceView(financeRows: readonly RawOverviewRow[], operationRows: readonly RawOverviewRow[], filters: DashboardFilters, options: { financeSpkMerges?: readonly PlotCodeMerge[]; financePlotMerges?: readonly PlotCodeMerge[]; operationSpkMerges?: readonly PlotCodeMerge[]; operationPlotMerges?: readonly PlotCodeMerge[]; operationWorksheet?: string } = {}) {
-  const financial = normalizeFinance(financeRows, { spkMerges: options.financeSpkMerges, plotCodeMerges: options.financePlotMerges });
+export function buildFinanceView(financeRows: readonly RawOverviewRow[], operationRows: readonly RawOverviewRow[], filters: DashboardFilters, options: { financeSpkMerges?: readonly PlotCodeMerge[]; financePlotMerges?: readonly PlotCodeMerge[]; financeWorksheet?: string; operationSpkMerges?: readonly PlotCodeMerge[]; operationPlotMerges?: readonly PlotCodeMerge[]; operationWorksheet?: string } = {}) {
+  const financial = normalizeFinance(financeRows, { worksheet: options.financeWorksheet, spkMerges: options.financeSpkMerges, plotCodeMerges: options.financePlotMerges });
   const operational = buildDashboardViewModel(operationRows, { ...filters, statuses: [] }, { worksheetName: options.operationWorksheet, spkMerges: options.operationSpkMerges, plotCodeMerges: options.operationPlotMerges });
   const relationships = relateFinance(financial.records, operational.validatedRecords);
   const matched = relationships.matched.filter(({ pair }) => (!filters.selectedSpkNumbers.length || filters.selectedSpkNumbers.includes(pair.spk)) && (!filters.plotCodes.length || filters.plotCodes.includes(pair.plot)));

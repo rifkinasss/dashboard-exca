@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { financeColumns, type RawFinanceRow } from "../../finance/types";
+import { allOverviewColumns, financeColumns, financeWorksheetName, type RawFinanceRow } from "../../finance/types";
 import { normalizeFinance } from "../../finance/lib/normalize-finance";
 import { relateFinance } from "../../finance/lib/relationships";
 import { allocateRevenue } from "../../finance/lib/revenue-allocation";
@@ -25,13 +25,13 @@ const op = [
 const all = { ...defaultFilters, startDate: "", endDate: "" };
 
 test("finance contract validates A-K and preserves row positions and explicit merge metadata", async () => {
-  const config: GoogleSheetsConfig = { source: "google-sheets", ttlSeconds: 60, spreadsheetId: "test", worksheet: "unused", email: "test@example.test", privateKey: "not-a-key" };
+  const config: GoogleSheetsConfig = { source: "google-sheets", ttlSeconds: 60, spreadsheetId: "test", worksheet: "Overview Finance", email: "test@example.test", privateKey: "not-a-key" };
   let calls = 0;
   const snapshot = await readFinanceOverview(config, async (url, params) => {
     calls++;
     if (calls === 1) return { properties: { locale: "id_ID" }, sheets: [{ properties: { title: "Overview Finance" }, merges: [{ startColumnIndex: 1, endColumnIndex: 2, startRowIndex: 1, endRowIndex: 3 }] }] };
     assert.match(decodeURIComponent(url), /Overview Finance.*A:Z/);
-    assert.equal(params.valueRenderOption, "FORMATTED_VALUE");
+    assert.equal(params.valueRenderOption, "UNFORMATTED_VALUE");
     return { values: [financeColumns, finance("A", "P"), finance("", "P"), [], ["Total", "", "", "10"]] };
   });
   assert.deepEqual(snapshot.spkMerges, [{ startRow: 2, endRow: 3 }]);
@@ -42,6 +42,44 @@ test("finance contract validates A-K and preserves row positions and explicit me
   assert.deepEqual(normalized.summaries, [5]);
   assert.equal(normalized.records.length, 2);
   await assert.rejects(readFinanceOverview(config, async () => ({ properties: { locale: "id_ID" }, sheets: [] })));
+});
+
+test("finance reads precise fuel volumes and retains formatted numeric identifiers", async () => {
+  const worksheet = "Overview Finance";
+  const config: GoogleSheetsConfig = { source: "google-sheets", ttlSeconds: 60, spreadsheetId: "test", worksheet, email: "test@example.test", privateKey: "not-a-key" };
+  const liters = 569.86;
+  const price = 24500;
+  const cost = liters * price;
+  const snapshot = await readFinanceOverview(config, async (url, params) => {
+    if (!url.includes("/values/")) return { properties: { locale: "id_ID" }, sheets: [{ properties: { title: worksheet } }] };
+    if (params.valueRenderOption === "UNFORMATTED_VALUE") return { values: [financeColumns, finance("", "P", { 1: 12, 6: price, 7: liters, 8: cost })] };
+    assert.match(decodeURIComponent(url), /'Overview Finance'!B2:C2$/);
+    return { values: [["00012", "P"]] };
+  });
+  const normalized = normalizeFinance(snapshot.rows);
+  assert.equal(normalized.records[0].spk, "00012");
+  assert.equal(normalized.records[0].fuelRefill, liters);
+  assert.equal(normalized.records[0].fuelCost, cost);
+});
+
+test("All Overview replaces the old testing snapshot and skips repeated activity rows", async () => {
+  assert.equal(financeWorksheetName(undefined), "Overview Finance");
+  assert.equal(financeWorksheetName("Version 3.0 testing"), "All Overview");
+  const worksheet = financeWorksheetName(" Version 3.0 - testing ");
+  const config: GoogleSheetsConfig = { source: "google-sheets", ttlSeconds: 60, spreadsheetId: "test", worksheet, email: "test@example.test", privateKey: "not-a-key" };
+  const values = [
+    allOverviewColumns,
+    [1, "001", "", "", "", "", "", "P", 5, 1000, 5000, 4900, 100, 46306, 150, 24, 3600],
+    [2, "", "", "", "", "", "", "P", "", "", "", "", "", 46307, 0],
+    ["Total", "", "", "", "", "", "", "", 5, "", 5000, 4900, 100],
+  ];
+  const snapshot = await readFinanceOverview(config, async (url) => url.includes("/values/")
+    ? { values }
+    : { properties: { locale: "id_ID" }, sheets: [{ properties: { title: worksheet } }] });
+  const normalized = normalizeFinance(snapshot.rows, { worksheet });
+  assert.deepEqual(normalized.records.map(({ plot, fuelRefill, fuelCost }) => ({ plot, fuelRefill, fuelCost })), [
+    { plot: "P", fuelRefill: 100, fuelCost: 3600 },
+  ]);
 });
 
 test("currency, missing volumes and conflicting merged identifiers are conservative", () => {

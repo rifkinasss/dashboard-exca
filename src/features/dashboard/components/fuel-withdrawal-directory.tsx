@@ -13,7 +13,7 @@ import { FuelWithdrawalDataTable } from "./fuel-withdrawal-data-table";
 import { FuelPriceHistory } from "./fuel-price-history";
 import { FuelWithdrawalForm } from "./fuel-withdrawal-form";
 
-export function FuelWithdrawalDirectory({ data, priceCatalog, authReady, writerReady, priceWriterReady, userEmail }: { data: FuelWithdrawalData; priceCatalog: FuelPriceCatalog | null; authReady: boolean; writerReady: boolean; priceWriterReady: boolean; userEmail: string | null }) {
+export function FuelWithdrawalDirectory({ data, priceCatalog, authReady, writerReady, priceWriterReady, userEmail, operatorEmail }: { data: FuelWithdrawalData; priceCatalog: FuelPriceCatalog | null; authReady: boolean; writerReady: boolean; priceWriterReady: boolean; userEmail: string | null; operatorEmail: string | null }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [start, setStart] = useState("");
@@ -32,7 +32,7 @@ export function FuelWithdrawalDirectory({ data, priceCatalog, authReady, writerR
   return <main className="directory-page fuel-directory">
     <header className="fuel-directory-heading">
       <div><p className="fuel-directory-eyebrow">Manajemen data</p><h1>Pembelian Solar</h1><p>Catatan pengambilan solar berdasarkan tanggal dan kode petak.</p></div>
-      <Button className="fuel-add-button" onClick={() => setOpen(true)}><Plus data-icon="inline-start" aria-hidden="true" />Tambah pembelian</Button>
+      <Button className="fuel-add-button" disabled={open} onClick={() => setOpen(true)}><Plus data-icon="inline-start" aria-hidden="true" />Tambah pembelian</Button>
     </header>
 
     <section className="fuel-summary" aria-label="Ringkasan pembelian solar">
@@ -54,10 +54,10 @@ export function FuelWithdrawalDirectory({ data, priceCatalog, authReady, writerR
     </section>
 
     <div className="fuel-price-note"><Info size={16} aria-hidden="true" /><p>Transaksi baru menyimpan harga dan biaya saat dicatat. Baris lama tanpa harga tersimpan memakai estimasi berdasarkan master saat ini; nilai ini bukan bukti pembayaran.</p></div>
-    {(!priceCatalog || priceCatalog.issues.length > 0) && <p className="directory-notice" role="status">Harga solar belum dapat digunakan. Periksa tabel harga di worksheet Pengambilan Solar{priceCatalog?.issues.length ? `: ${priceCatalog.issues.join(" ")}` : "."}</p>}
+    {(!priceCatalog || priceCatalog.issues.length > 0) && <p className="directory-notice" role="status">Harga solar belum dapat digunakan. Periksa tabel harga{priceCatalog?.issues.length ? `: ${priceCatalog.issues.join(" ")}` : "."}</p>}
     {data.invalidRows.length > 0 && <p className="directory-notice" role="status">{data.invalidRows.length} transaksi tidak valid dan belum dapat ditampilkan.</p>}
 
-    <FuelWithdrawalDataTable rows={filtered} total={data.records.length} page={page} setPage={setPage} priceCatalog={priceCatalog} hasFilters={hasFilters} resetFilters={resetFilters} />
-    {open && <FuelWithdrawalForm plotCodes={plotCodes} priceCatalog={priceCatalog} authReady={authReady} writerReady={writerReady} userEmail={userEmail} onClose={() => setOpen(false)} />}
+    <FuelWithdrawalDataTable rows={filtered} total={data.records.length} page={page} setPage={setPage} priceCatalog={priceCatalog} hasFilters={hasFilters} resetFilters={resetFilters} authReady={authReady} writerReady={writerReady} userEmail={userEmail ?? operatorEmail} plotCodes={plotCodes} />
+    {open && <FuelWithdrawalForm plotCodes={plotCodes} priceCatalog={priceCatalog} authReady={authReady} writerReady={writerReady} userEmail={userEmail ?? operatorEmail} onClose={() => setOpen(false)} />}
   </main>;
 }

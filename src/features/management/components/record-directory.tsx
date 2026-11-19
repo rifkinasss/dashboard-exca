@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ActivityDataTable } from "./activity-data-table";
 import { ActivityFormDialog } from "@/features/activities/components/activity-form-dialog";
 import { FuelFormDialog } from "@/features/fuel/components/fuel-form-dialog";
-import { FinanceRecordFormDialog } from "@/features/finance/components/finance-record-form-dialog";
 import { formatNumber } from "@/features/dashboard/lib/format";
 import type { resolveWithdrawalPricing } from "@/features/dashboard/lib/fuel-price";
 
@@ -88,7 +87,7 @@ export function RecordDirectory({ kind, rows, plotCodes, spkNumbers, qualityCoun
   }
 
   return <main className="directory-page">
-    <header className="directory-heading"><div><span className="directory-eyebrow">MANAJEMEN DATA · BACA SAJA</span><h1>{titles[kind]}</h1><p>{subtitles[kind]}</p></div><Button onClick={() => startEdit()} size="sm">Tambah {kind === "fuel" ? "pengisian" : "data keuangan"}</Button></header>
+    <header className="directory-heading"><div><span className="directory-eyebrow">MANAJEMEN DATA · BACA SAJA</span><h1>{titles[kind]}</h1><p>{subtitles[kind]}</p></div>{kind === "fuel" && <Button onClick={() => startEdit()} size="sm">Tambah pengisian</Button>}</header>
     <section className="directory-toolbar directory-toolbar-wrap" aria-label="Cari dan filter data">
       <label className="directory-search"><Search aria-hidden="true" /><span className="sr-only">Cari data</span><Input value={query} onChange={(event) => setFilter(setQuery)(event.target.value)} placeholder={kind === "finance" ? "Cari SPK atau petak" : "Cari petak, keterangan, atau baris sumber"} /></label>
       <label className="directory-filter">Kode petak<select value={plot} onChange={(event) => setFilter(setPlot)(event.target.value)}><option value="">Semua petak</option>{plotCodes.map((code) => <option key={code}>{code}</option>)}</select></label>
@@ -99,13 +98,12 @@ export function RecordDirectory({ kind, rows, plotCodes, spkNumbers, qualityCoun
     </section>
     <section className="directory-table-panel" aria-label={`Daftar ${titles[kind]}`}>
       <Table><TableHeader><TableRow><TableHead>{sortBy("primary", kind === "finance" ? "SPK · sumber" : "Sumber")}</TableHead><TableHead>{sortBy("plot", "Kode petak")}</TableHead>{kind !== "finance" && <TableHead>{sortBy("date", kind === "fuel" ? "Tanggal baris sumber" : "Tanggal aktivitas")}</TableHead>}<TableHead>{sortBy("value", kind === "finance" ? "Nilai sumber" : kind === "fuel" ? "Pengisian (L)" : "HM · Solar riil")}</TableHead><TableHead>Kualitas</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader>
-        <TableBody>{pageRows.map((row) => <TableRow key={row.key}><TableCell className="directory-primary-cell">{row.primary}</TableCell><TableCell>{row.plot || "Belum diketahui"}{row.spk && kind !== "finance" && <span className="directory-secondary-line">SPK {row.spk}</span>}</TableCell>{kind !== "finance" && <TableCell>{row.date || "Tidak tersedia"}</TableCell>}<TableCell>{row.value}</TableCell><TableCell>{row.issues.length ? `${row.issues.length} temuan` : "—"}</TableCell><TableCell><div className="directory-row-actions"><Button size="sm" variant="outline" onClick={() => setSelected(row)}>Detail</Button><Button size="sm" variant="outline" onClick={() => startEdit(row)}>Edit draft</Button></div></TableCell></TableRow>)}</TableBody></Table>
+        <TableBody>{pageRows.map((row) => <TableRow key={row.key}><TableCell className="directory-primary-cell">{row.primary}</TableCell><TableCell>{row.plot || "Belum diketahui"}{row.spk && kind !== "finance" && <span className="directory-secondary-line">SPK {row.spk}</span>}</TableCell>{kind !== "finance" && <TableCell>{row.date || "Tidak tersedia"}</TableCell>}<TableCell>{row.value}</TableCell><TableCell>{row.issues.length ? `${row.issues.length} temuan` : "—"}</TableCell><TableCell><div className="directory-row-actions"><Button size="sm" variant="outline" onClick={() => setSelected(row)}>Detail</Button>{kind !== "finance" && <Button size="sm" variant="outline" onClick={() => startEdit(row)}>Edit draft</Button>}</div></TableCell></TableRow>)}</TableBody></Table>
       {!pageRows.length && <div className="directory-empty"><strong>{rows.length ? "Tidak ada data yang cocok" : "Belum ada data sumber"}</strong><p>{rows.length ? "Ubah kata pencarian atau filter." : "Tidak ada rekaman sintetis yang ditampilkan sebagai data produksi."}</p></div>}
       <footer className="directory-pagination"><span>Halaman {current} dari {pages} · {visible.length} baris</span><div><Button variant="outline" size="sm" disabled={current <= 1} onClick={() => setPage(current - 1)}>Sebelumnya</Button><Button variant="outline" size="sm" disabled={current >= pages} onClick={() => setPage(current + 1)}>Berikutnya</Button></div></footer>
     </section>
     {selected && <RecordDetail row={selected} close={() => setSelected(null)} />}
     {editing !== undefined && kind === "fuel" && <FuelFormDialog initial={editing?.details} plotCodes={plotCodes} onClose={() => setEditing(undefined)} />}
-    {editing !== undefined && kind === "finance" && <FinanceRecordFormDialog initial={editing?.details} plotCodes={plotCodes} spkNumbers={spkNumbers} onClose={() => setEditing(undefined)} />}
   </main>;
 }
 

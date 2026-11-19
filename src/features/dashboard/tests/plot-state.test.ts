@@ -42,6 +42,20 @@ test("ambiguous same-day statuses do not claim a completion date", () => {
   assert.equal(state.completionDate, null);
 });
 
+test("latest petak status includes completed activity rows from the plot block", () => {
+  const plot = buildManagementDirectory([
+    row({ plotCode: "A", date: "10/11/2026", workStatus: "Garap Petak Berlangsung" }),
+  ], [], {
+    sheetPlots: [{
+      code: "A", spk: null, pricePerHa: 1000000, area: 1, sourceRow: 2, spkSourceRow: 1, areaSourceRow: 5,
+      activities: [{ sourceRow: 20, date: "2026-11-11", hmStart: 304.1, hmEnd: 310.5, workingHours: 6.4, estimatedWorkingHours: 6, fuelRefill: 0, fuelPerHour: 10.1, actualFuelUsage: 64.64, workStatus: "Selesai", notes: null }],
+    }],
+  }).plots[0];
+
+  assert.equal(plot.status, "Selesai");
+  assert.equal(plot.completionDate, "2026-11-11");
+});
+
 test("plot detail separates refill entries from activity history and flags repeated campaigns", () => {
   const result = buildManagementDirectory([
     row({ plotCode: "A", plotArea: 2, date: "01/10/2026", hmStart: 10, hmEnd: 12, workingHours: 2, actualFuelUsage: 20, fuelRefill: 50, workStatus: "Mulai Garap Petak" }),

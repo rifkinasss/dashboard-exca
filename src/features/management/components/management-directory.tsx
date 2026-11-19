@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Clock3, Fuel, Map, MapPinned, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import type { buildManagementDirectory } from "../lib/build-management-directory
 import { PlotFormDialog, type PlotFormInitialValue } from "./plot-form-dialog";
 import { SpkFormDialog } from "./spk-form-dialog";
 import { PlotDataTable } from "./plot-data-table";
+import type { SpkDocumentRecord } from "../lib/spk-document-folders";
 
 type Directory = ReturnType<typeof buildManagementDirectory>;
 type Plot = Directory["plots"][number];
@@ -23,7 +25,7 @@ function QualityBadge({ count }: { count: number }) {
   return count ? <Badge variant="outline" className="directory-quality">{count} tinjauan</Badge> : <Badge variant="outline" className="directory-clean">Valid</Badge>;
 }
 
-function Drawer({ item, close, onEdit, onLinkDocument }: { item: Plot | Spk | null; close: () => void; onEdit: (plot: Plot) => void; onLinkDocument: (number: string) => void }) {
+function Drawer({ item, close, onEdit, onLinkDocument, spkDocuments, spkDocumentsAvailable }: { item: Plot | Spk | null; close: () => void; onEdit: (plot: Plot) => void; onLinkDocument: (number: string) => void; spkDocuments: Record<string, SpkDocumentRecord>; spkDocumentsAvailable: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     if (item && dialog.current && !dialog.current.open) dialog.current.showModal();
@@ -44,8 +46,8 @@ function Drawer({ item, close, onEdit, onLinkDocument }: { item: Plot | Spk | nu
           <div><dt>Solar riil · seluruh waktu</dt><dd>{item.fuel === null ? "Belum tersedia" : `${formatNumber(item.fuel)} L`}</dd></div>
           <div><dt>Aktivitas tanpa tanggal</dt><dd>{item.undatedCount}</dd></div>
         </dl>
-        <div className="directory-detail-section"><h3>Jejak baris operasional</h3><p>Baris kode petak: {item.plotCodeSourceRows.join(", ") || "—"}</p><p>Baris sumber SPK: {item.spkSourceRows.join(", ") || "—"}</p><p>Baris aktivitas: {item.sourceRows.join(", ") || "—"}</p><p>Baris metadata luas: {item.areaSourceRows.join(", ") || "—"}</p></div>
-        <div className="directory-detail-actions"><Button variant="outline" onClick={() => onEdit(item)}>Edit draft</Button></div>
+        <div className="directory-detail-section"><h3>Jejak baris operasional</h3><p>Baris kode petak: {item.plotCodeSourceRows.join(", ") || "—"}</p><p>Baris sumber SPK: {item.spkSourceRows.join(", ") || "—"}</p><p>Baris aktivitas: {item.sourceRows.join(", ") || "—"}</p><p>Baris metadata luas: {item.areaSourceRows.map(({ worksheet, row }) => `${worksheet} · ${row}`).join(", ") || "—"}</p></div>
+        <div className="directory-detail-actions"><Button variant="outline" onClick={() => onEdit(item)}>Kelola SPK</Button></div>
         <IssueList issues={item.issues} />
       </> : <>
         <dl className="directory-detail-grid">
@@ -61,7 +63,7 @@ function Drawer({ item, close, onEdit, onLinkDocument }: { item: Plot | Spk | nu
           <div><dt>Margin setelah biaya · pasangan lengkap</dt><dd>{financialValue(item.finance.margin)}</dd></div>
         </dl>
         <div className="directory-detail-section"><h3>Hubungan SPK–petak</h3>{item.relationships.map((relation) => <p key={relation.plot}>{relation.plot}: sumber SPK baris {relation.spkSourceRows.join(", ") || "—"}; operasional baris {relation.operationRows.join(", ") || "—"}; finance baris {relation.financeRows.join(", ") || "tidak ada pasangan"}</p>)}</div>
-        <div className="directory-detail-section"><h3>Administrasi SPK</h3><p>Status dokumen dan referensi administrasi tidak tersedia pada worksheet sumber. Status pekerjaan tidak digunakan untuk menyimpulkan status SPK.</p><Button variant="outline" onClick={() => onLinkDocument(item.number)}>Siapkan referensi dokumen</Button></div>
+        <div className="directory-detail-section"><h3>Administrasi SPK</h3><p>Status pekerjaan petak tidak digunakan untuk menyimpulkan status dokumen SPK.</p><p>{!spkDocumentsAvailable ? "Status dokumen tidak dapat dibaca dari worksheet Administrasi SPK." : `${spkDocuments[item.number]?.spkUrl ? "Dokumen SPK tersedia" : "Dokumen SPK belum diunggah"} · ${spkDocuments[item.number]?.beritaAcaraUrl ? "Berita Acara tersedia" : "Berita Acara belum diunggah"} · ${spkDocuments[item.number]?.payoutUrl ? "Bukti Pencairan tersedia" : "Bukti Pencairan belum diunggah"}`}</p><Button variant="outline" onClick={() => onLinkDocument(item.number)}>Kelola dokumen</Button></div>
         <IssueList issues={item.issues} />
       </>}
     </section>
@@ -76,7 +78,8 @@ function IssueList({ issues }: { issues: { severity: string; code: string; messa
   return <div className="directory-detail-section"><h3>Kualitas data · {issues.length} temuan</h3>{issues.length ? <ul>{issues.map((issue, index) => <li key={`${issue.code}-${issue.row}-${index}`}>{issue.message} <span>{issue.row}</span></li>)}</ul> : <p>Tidak ada temuan terkait entri ini.</p>}</div>;
 }
 
-export function ManagementDirectory({ data, kind, financeAvailable = true }: { data: Directory; kind: "petak" | "spk"; financeAvailable?: boolean }) {
+export function ManagementDirectory({ data, kind, financeAvailable = true, writerReady = false, canWrite = false, authReady = false, userEmail = null, pickerApiKey = "", cloudProjectNumber = "", cloudClientId = "", spkDocuments = {}, spkDocumentsAvailable = true }: { data: Directory; kind: "petak" | "spk"; financeAvailable?: boolean; writerReady?: boolean; canWrite?: boolean; authReady?: boolean; userEmail?: string | null; pickerApiKey?: string; cloudProjectNumber?: string; cloudClientId?: string; spkDocuments?: Record<string, SpkDocumentRecord>; spkDocumentsAvailable?: boolean }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState<{ key: SortKey; direction: 1 | -1 }>({ key: "name", direction: 1 });
@@ -127,28 +130,28 @@ export function ManagementDirectory({ data, kind, financeAvailable = true }: { d
   function linkDocument(number: string) { setSelected(null); setAdminSpkNumber(number); }
 
   return <main className="directory-page">
-    <header className="directory-heading"><div><span className="directory-eyebrow">MANAJEMEN DATA · BACA SAJA</span><h1>Petak Lahan</h1><p>{kind === "petak" ? "Inventaris petak dari seluruh baris operasional, termasuk riwayat di luar periode dashboard." : "Ringkasan SPK, petak terkait, aktivitas operasional, dan snapshot Finance yang memiliki pasangan terverifikasi."}</p></div><Badge variant="outline" className="directory-readonly">Google Sheets · read-only</Badge></header>
+    <header className="directory-heading"><div><span className="directory-eyebrow">MANAJEMEN DATA{kind === "petak" && writerReady || kind === "spk" && writerReady ? "" : " · BACA SAJA"}</span><h1>Petak Lahan</h1><p>{kind === "petak" ? "Inventaris petak dari worksheet operasional." : "Ringkasan SPK, petak terkait, aktivitas operasional, dan snapshot Finance yang memiliki pasangan terverifikasi."}</p></div><Badge variant="outline" className="directory-readonly">{kind === "petak" && writerReady || kind === "spk" && writerReady ? "Google Sheets" : "Google Sheets · baca saja"}</Badge></header>
     {kind === "spk" && !financeAvailable && <p className="directory-notice" role="status">Data operasional tersedia. Snapshot Finance sedang tidak tersedia, sehingga nilai keuangan tidak ditampilkan.</p>}
-    {kind === "spk" && <section className="directory-admin-notice"><div><h2>Administrasi SPK</h2><p>Status dokumen dan referensi administrasi belum tersedia pada worksheet sumber. Ringkasan pekerjaan di bawah tidak digunakan untuk menyimpulkan status SPK. Buka detail SPK untuk menyiapkan draft referensi.</p></div></section>}
+    {kind === "spk" && <section className="directory-admin-notice"><div><h2>Administrasi SPK</h2><p>{spkDocumentsAvailable ? "Unggah SPK, Berita Acara, dan bukti pencairan melalui detail SPK." : "Worksheet Administrasi SPK tidak dapat dibaca; status dokumen tidak ditampilkan."} SPK dapat ditautkan setelah nomornya tersedia.</p></div></section>}
     {kind === "petak" && <section className="plot-list-summary" aria-label="Ringkasan inventaris petak">{plotSummary.map(({ label, value, note, icon: Icon }) => <Card key={label} className="plot-list-kpi"><CardHeader><CardTitle><span><Icon aria-hidden="true" /></span>{label}</CardTitle></CardHeader><CardContent><strong>{value}</strong><small>{note}</small></CardContent></Card>)}</section>}
     {kind === "petak" ? <PlotDataTable data={data} onAdd={() => { setEditingPlot(null); setPlotFormOpen(true); }} /> : <>
       <section className="directory-toolbar" aria-label="Cari dan filter data SPK">
         <label className="directory-search"><Search size={16} aria-hidden="true" /><span className="sr-only">Cari nomor SPK atau kode petak</span><Input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Cari nomor SPK atau petak" /></label>
         <label className="directory-filter">Snapshot Finance<select value={filter} onChange={(event) => { setFilter(event.target.value); setPage(1); }}><option value="all">Semua</option><option value="finance">Ada nilai terverifikasi</option><option value="no-finance">Belum ada nilai terverifikasi</option></select></label>
-        <span className="directory-count">{visible.length} SPK · {data.qualityIssueCount} temuan sumber</span><Button size="sm" onClick={() => setAdminSpkNumber("")}>Tambah SPK</Button>
+        <span className="directory-count">{visible.length} SPK · {data.qualityIssueCount} temuan sumber</span>
       </section>
       <section className="directory-table-panel" aria-label="Daftar SPK">
         <Table><TableHeader><TableRow><TableHead>{sortButton("Nomor SPK", "name")}</TableHead><TableHead>Petak terkait</TableHead><TableHead>{sortButton("Luas terverifikasi (Ha)", "area")}</TableHead><TableHead>{sortButton("Aktivitas", "activity")}</TableHead><TableHead>{sortButton("HM (Jam)", "hours")}</TableHead><TableHead>{sortButton("Solar riil (L)", "fuel")}</TableHead><TableHead>{sortButton("Pendapatan kotor", "revenue")}</TableHead><TableHead>Biaya solar</TableHead><TableHead>Kualitas</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader><TableBody>{pageRows.map((row) => { const spk = row as Spk; return <TableRow key={spk.number}>
-          <TableCell className="directory-primary-cell">{spk.number}</TableCell><TableCell><strong>{spk.plotCodes.length} petak</strong>{spk.plotCodes.length > 0 && <><br />{spk.plotCodes.join(", ")}</>}</TableCell><TableCell>{spk.verifiedArea === null ? `${spk.areaCoverage.verifiedCount}/${spk.areaCoverage.totalCount} valid` : formatNumber(spk.verifiedArea)}</TableCell><TableCell>{spk.activityCount}</TableCell><TableCell>{formatNumber(spk.hours)}</TableCell><TableCell>{formatNumber(spk.fuel)}</TableCell><TableCell>{financialValue(spk.finance.gross)}</TableCell><TableCell>{financialValue(spk.finance.fuelCost)}</TableCell><TableCell><QualityBadge count={spk.issues.length} /></TableCell><TableCell><div className="directory-row-actions"><Button variant="outline" size="sm" onClick={() => setSelected(spk)}>Detail</Button><Button variant="outline" size="sm" onClick={() => setAdminSpkNumber(spk.number)}>Edit draft</Button></div></TableCell>
+          <TableCell className="directory-primary-cell">{spk.number}</TableCell><TableCell><strong>{spk.plotCodes.length} petak</strong>{spk.plotCodes.length > 0 && <><br />{spk.plotCodes.join(", ")}</>}</TableCell><TableCell>{spk.verifiedArea === null ? `${spk.areaCoverage.verifiedCount}/${spk.areaCoverage.totalCount} valid` : formatNumber(spk.verifiedArea)}</TableCell><TableCell>{spk.activityCount}</TableCell><TableCell>{formatNumber(spk.hours)}</TableCell><TableCell>{formatNumber(spk.fuel)}</TableCell><TableCell>{financialValue(spk.finance.gross)}</TableCell><TableCell>{financialValue(spk.finance.fuelCost)}</TableCell><TableCell><QualityBadge count={spk.issues.length} /></TableCell><TableCell><div className="directory-row-actions"><Button variant="outline" size="sm" onClick={() => setSelected(spk)}>Detail</Button><Button variant="outline" size="sm" onClick={() => setAdminSpkNumber(spk.number)}>Kelola dokumen</Button></div></TableCell>
         </TableRow>; })}</TableBody></Table>
         {!pageRows.length && <div className="directory-empty"><strong>{rows.length ? "Tidak ada data yang cocok" : "Belum ada data untuk ditampilkan"}</strong><p>{rows.length ? "Ubah kata pencarian atau filter." : "Daftar hanya memuat data sumber Google Sheets yang berhasil dinormalisasi."}</p></div>}
         <footer className="directory-pagination"><span>Halaman {currentPage} dari {totalPages} · {visible.length} entri</span><div><Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Sebelumnya</Button><Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Berikutnya</Button></div></footer>
       </section>
     </>}
     <p className="directory-footnote">Ringkasan operasional menggunakan rekaman valid dan tidak duplikat. Status petak memakai riwayat seluruh tanggal. Data bertanggal kosong tidak dihitung sebagai aktivitas bertanggal.</p>
-    <Drawer item={selected} close={() => setSelected(null)} onEdit={editPlot} onLinkDocument={linkDocument} />
-    {kind === "petak" && plotFormOpen && <PlotFormDialog initial={editingPlot} existingPlotCodes={data.plots.map((plot) => plot.code)} existingSpkNumbers={data.spks.map((spk) => spk.number)} onClose={() => { setPlotFormOpen(false); setEditingPlot(null); }} />}
-    {kind === "spk" && adminSpkNumber !== null && <SpkFormDialog key={adminSpkNumber || "new"} initialNumber={adminSpkNumber} existingNumbers={data.spks.map((spk) => spk.number)} plotOptions={data.plots.map((plot) => plot.code)} onClose={() => setAdminSpkNumber(null)} />}
+    <Drawer item={selected} close={() => setSelected(null)} onEdit={editPlot} onLinkDocument={linkDocument} spkDocuments={spkDocuments} spkDocumentsAvailable={spkDocumentsAvailable} />
+    {kind === "petak" && plotFormOpen && <PlotFormDialog initial={editingPlot} existingPlotCodes={data.plots.map((plot) => plot.code)} writerReady={writerReady} canWrite={canWrite} authReady={authReady} userEmail={userEmail} onClose={() => { setPlotFormOpen(false); setEditingPlot(null); }} />}
+    {kind === "spk" && adminSpkNumber !== null && <SpkFormDialog key={adminSpkNumber} initialNumber={adminSpkNumber} existingNumbers={data.spks.map((spk) => spk.number)} initialRecord={spkDocuments[adminSpkNumber] ?? null} canWrite={canWrite} writerReady={writerReady} authReady={authReady} pickerApiKey={pickerApiKey} cloudProjectNumber={cloudProjectNumber} cloudClientId={cloudClientId} onClose={() => { setAdminSpkNumber(null); router.refresh(); }} />}
   </main>;
 }
 

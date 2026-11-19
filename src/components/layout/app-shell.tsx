@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
+import { BrandIcon } from "@/components/brand-icon";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   Activity,
   ChevronDown,
@@ -13,14 +13,17 @@ import {
   LayoutDashboard,
   Map,
   Menu,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
+  Sun,
   X,
 } from "lucide-react";
 import { Popover } from "@base-ui/react/popover";
+import { AccountMenu } from "@/features/auth/components/account-menu";
 import { shouldRefreshData } from "@/features/shared/lib/auto-refresh";
-import { defaultAppearance, type Appearance } from "@/features/settings/lib/appearance";
+import { buttonForeground, defaultAppearance, isHexColor, secondaryChartColor, type Appearance } from "@/features/settings/lib/appearance";
 import { dashboardPaths } from "@/features/dashboard/lib/dashboard-navigation";
 import {
   managementHref,
@@ -38,6 +41,17 @@ const icons = {
   keuangan: CircleDollarSign,
   settings: Settings,
 };
+
+let sessionDarkMode = false;
+function readColorMode() {
+  try { return localStorage.getItem("excavator-color-mode") === "dark"; }
+  catch { return sessionDarkMode; }
+}
+function subscribeColorMode(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("color-mode-changed", callback);
+  return () => { window.removeEventListener("storage", callback); window.removeEventListener("color-mode-changed", callback); };
+}
 
 function Navigation({
   pathname,
@@ -178,12 +192,22 @@ function Navigation({
   );
 }
 
-export function AppShell({ children, refreshSeconds }: { children: ReactNode; refreshSeconds: number }) {
+export function AppShell({ children, refreshSeconds, releaseVersion }: { children: ReactNode; refreshSeconds: number; releaseVersion?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams().toString();
   const [collapsed, setCollapsed] = useState(false);
+  const darkMode = useSyncExternalStore(subscribeColorMode, readColorMode, () => false);
   const [appearance, setAppearance] = useState<Appearance>(defaultAppearance);
+  useEffect(() => {
+    document.documentElement.dataset.colorMode = darkMode ? "dark" : "light";
+  }, [darkMode]);
+  function toggleColorMode() {
+    const next = !darkMode;
+    sessionDarkMode = next;
+    try { localStorage.setItem("excavator-color-mode", next ? "dark" : "light"); } catch { /* Session-only preference. */ }
+    window.dispatchEvent(new Event("color-mode-changed"));
+  }
   useEffect(() => {
     let active = true;
     const refreshAppearance = async () => {
@@ -199,7 +223,38 @@ export function AppShell({ children, refreshSeconds }: { children: ReactNode; re
     window.addEventListener("appearance-saved", refreshAppearance);
     return () => { active = false; window.clearInterval(timer); window.removeEventListener("appearance-saved", refreshAppearance); };
   }, [refreshSeconds]);
-  useEffect(() => { document.documentElement.dataset.theme = appearance.theme; }, [appearance.theme]);
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--chart-secondary", secondaryChartColor(appearance.theme));
+    if (isHexColor(appearance.theme)) {
+      root.dataset.theme = "custom";
+      root.style.setProperty("--primary", appearance.theme);
+      root.style.setProperty("--primary-hover", `color-mix(in srgb, ${appearance.theme}, black 25%)`);
+      root.style.setProperty("--primary-soft", `color-mix(in srgb, ${appearance.theme}, var(--surface) 90%)`);
+      root.style.setProperty("--ring", appearance.theme);
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(appearance.theme.slice(i, i + 2), 16) / 255).map((v) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+      root.style.setProperty("--primary-foreground", 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.179 ? "#0F172A" : "#fff");
+      root.style.setProperty("--button-primary-foreground", buttonForeground(appearance.theme));
+    } else {
+      root.dataset.theme = appearance.theme;
+      ["--primary", "--primary-hover", "--primary-soft", "--ring", "--primary-foreground", "--button-primary-foreground"].forEach((property) => root.style.removeProperty(property));
+    }
+  }, [appearance.theme]);
+  useEffect(() => {
+    const icon = document.querySelector<SVGSVGElement>("[data-brand-icon]");
+    if (!icon) return;
+    const copy = icon.cloneNode(true) as SVGSVGElement;
+    const style = getComputedStyle(icon);
+    copy.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    copy.setAttribute("style", `color:${style.color}`);
+    copy.querySelector("rect")?.setAttribute("fill", getComputedStyle(icon.querySelector("rect")!).fill);
+    const link = document.createElement("link");
+    link.rel = "icon";
+    link.type = "image/svg+xml";
+    link.href = `data:image/svg+xml,${encodeURIComponent(new XMLSerializer().serializeToString(copy))}`;
+    document.head.appendChild(link);
+    return () => link.remove();
+  }, [appearance.theme, darkMode, pathname]);
   const drawer = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     let lastRefresh = Date.now();
@@ -229,22 +284,24 @@ export function AppShell({ children, refreshSeconds }: { children: ReactNode; re
         "children" in item ? [...item.children] : [item],
       ),
     )
-    .find(
-      (item) =>
-        item.href === pathname ||
-        (item.href === "/petak" && (pathname.startsWith("/petak/") || pathname === "/spk")),
-    );
+    .find((item) => item.href === pathname);
+  const pageTitle = pathname === "/spk" ? "Data SPK"
+    : pathname.startsWith("/petak/") ? "Detail Petak"
+    : pathname === dashboardPaths.operasional ? "Dashboard Operasional"
+    : pathname === dashboardPaths.keuangan ? "Dashboard Keuangan"
+    : current?.label ?? "Monitoring";
   const brand = (
     <div className="management-brand">
       <span className="management-brand-icon">
-        <Image src="/icon.svg" width={30} height={30} alt="" />
+        <BrandIcon />
       </span>
       <div className="management-brand-copy">
         <strong>{appearance.name}</strong>
-        <span>Management System</span>
+        {releaseVersion && <span>Versi {releaseVersion}</span>}
       </div>
     </div>
   );
+  if (pathname === "/login") return children;
   return (
     <div className={`management-shell${collapsed ? " is-collapsed" : ""}`}>
       <aside className="management-sidebar" aria-label="Sidebar navigasi">
@@ -287,9 +344,13 @@ export function AppShell({ children, refreshSeconds }: { children: ReactNode; re
             <Menu size={21} />
           </button>
           <div className="management-topbar-copy">
-            <span>NASLABS / EXCAVATOR</span>
-            <strong>{current?.label ?? "Monitoring"}</strong>
+            <span>{appearance.name}</span>
+            <strong>{pageTitle}</strong>
           </div>
+          <button type="button" className="management-mode-toggle" onClick={toggleColorMode} aria-label={darkMode ? "Aktifkan tema terang" : "Aktifkan tema gelap"} title={darkMode ? "Tema terang" : "Tema gelap"}>
+            {darkMode ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}
+          </button>
+          <AccountMenu />
         </header>
         {children}
       </div>
