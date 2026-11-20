@@ -13,7 +13,8 @@ import { KpiCards } from "./kpi-cards";
 import { Charts } from "./charts";
 import { PlotSummary } from "./plot-summary";
 import { summarizeFuelWithdrawals, type FuelWithdrawalData } from "../lib/fuel-withdrawals";
-import { plot2026Period, plot2026Worksheet } from "../../management/lib/plot-sheet";
+import { plot2026Period, plot2026Worksheet, type PlotSheetSummary } from "../../management/lib/plot-sheet";
+import type { PlotPrice } from "../../management/lib/plot-price";
 import { SourceStatus } from "./source-status";
 
 export function Dashboard({
@@ -24,6 +25,8 @@ export function Dashboard({
   spkMerges,
   initialFilters = defaultFilters,
   annualPlotPeriod = false,
+  plotPrices,
+  plotSheetSummaries,
 }: {
   rows: readonly RawOverviewRow[];
   withdrawals: FuelWithdrawalData | null;
@@ -32,6 +35,8 @@ export function Dashboard({
   spkMerges?: readonly PlotCodeMerge[];
   initialFilters?: DashboardFilters;
   annualPlotPeriod?: boolean;
+  plotPrices: PlotPrice[] | null;
+  plotSheetSummaries: PlotSheetSummary[];
 }) {
   const [filters, setFilters] = useState(initialFilters);
   const [showAllPlots, setShowAllPlots] = useState(true);
@@ -151,7 +156,8 @@ export function Dashboard({
               }
               allRows={view.scopedRecords}
               periodRows={view.filteredValidatedRecords}
-              issues={view.issues}
+              plotPrices={plotPrices}
+              plotSheetSummaries={plotSheetSummaries}
               onClose={() => setSelectedPlot(null)}
             />
           )}

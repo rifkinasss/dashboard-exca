@@ -6,16 +6,20 @@ import { getDashboardData } from "@/features/dashboard/data/server/dashboard-sou
 import { getFuelWithdrawals } from "@/features/dashboard/data/server/fuel-withdrawal-source";
 import { defaultFilters } from "@/features/dashboard/lib/overview";
 import { plot2026Worksheet } from "@/features/management/lib/plot-sheet";
-import { plotWorksheetName } from "@/features/management/data/server/plot-sheet-source";
+import { plotWorksheetName, readPlotSheet } from "@/features/management/data/server/plot-sheet-source";
+import { getPlotPrices } from "@/features/management/data/server/plot-price-source";
 import Loading from "../../loading";
 
 export const metadata = { title: "Dashboard Operasional" };
 
 async function DashboardContent() {
   await connection();
-  const [data, withdrawals] = await Promise.all([
+  const worksheet = plotWorksheetName(process.env);
+  const [data, withdrawals, sheetPlots, plotPrices] = await Promise.all([
     getDashboardData(),
     getFuelWithdrawals(),
+    worksheet ? readPlotSheet().catch(() => []) : [],
+    getPlotPrices(),
   ]);
   if (data.kind === "error") {
     return (
@@ -34,7 +38,10 @@ async function DashboardContent() {
       plotCodeMerges={data.plotCodeMerges}
       spkMerges={data.spkMerges}
       initialFilters={initialFilters}
-      annualPlotPeriod={plotWorksheetName(process.env) === plot2026Worksheet}
+      annualPlotPeriod={worksheet === plot2026Worksheet}
+      plotPrices={plotPrices}
+      plotSheetSummaries={sheetPlots.map(({ code, spk, pricePerHa, totalValue, area, totalFuelConsumption }) =>
+        ({ code, spk, pricePerHa, totalValue, area, totalFuelConsumption }))}
     />
   );
 }

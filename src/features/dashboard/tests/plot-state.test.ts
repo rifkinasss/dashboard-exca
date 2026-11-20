@@ -47,7 +47,7 @@ test("latest petak status includes completed activity rows from the plot block",
     row({ plotCode: "A", date: "10/11/2026", workStatus: "Garap Petak Berlangsung" }),
   ], [], {
     sheetPlots: [{
-      code: "A", spk: null, pricePerHa: 1000000, area: 1, sourceRow: 2, spkSourceRow: 1, areaSourceRow: 5,
+      code: "A", spk: null, pricePerHa: 1000000, totalValue: null, area: 1, totalFuelConsumption: null, sourceRow: 2, spkSourceRow: 1, areaSourceRow: 5,
       activities: [{ sourceRow: 20, date: "2026-11-11", hmStart: 304.1, hmEnd: 310.5, workingHours: 6.4, estimatedWorkingHours: 6, fuelRefill: 0, fuelPerHour: 10.1, actualFuelUsage: 64.64, workStatus: "Selesai", notes: null }],
     }],
   }).plots[0];

@@ -1,4 +1,6 @@
-export type SheetPlot = { code: string; spk: string | null; pricePerHa: number | null; area: number | null; sourceRow: number; spkSourceRow: number; areaSourceRow: number; activities: { sourceRow: number; date: string | null; hmStart: number | null; hmEnd: number | null; workingHours: number | null; estimatedWorkingHours: number | null; fuelRefill: number | null; fuelPerHour: number | null; actualFuelUsage: number | null; workStatus: string | null; notes: string | null }[] };
+export type SheetPlot = { code: string; spk: string | null; pricePerHa: number | null; totalValue: number | null; area: number | null; totalFuelConsumption: number | null; sourceRow: number; spkSourceRow: number; areaSourceRow: number; activities: { sourceRow: number; date: string | null; hmStart: number | null; hmEnd: number | null; workingHours: number | null; estimatedWorkingHours: number | null; fuelRefill: number | null; fuelPerHour: number | null; actualFuelUsage: number | null; workStatus: string | null; notes: string | null }[] };
+
+export type PlotSheetSummary = Pick<SheetPlot, "code" | "spk" | "pricePerHa" | "totalValue" | "area" | "totalFuelConsumption">;
 
 export const plot2026Worksheet = "2026";
 export const plot2026Period = { start: "2026-10-01", end: "2026-12-31" };
@@ -64,7 +66,20 @@ export function parsePlotSheet(values: readonly (readonly unknown[])[]): SheetPl
       const workStatus = rawStatus === "Mulai Garap Petak" ? "Mulai pengerjaan" : rawStatus === "Garap Petak Berlangsung" ? "Dalam pengerjaan" : rawStatus === "Garap Petak Selesai" ? "Selesai" : rawStatus || null;
       return { sourceRow: rowIndex + 1, date: date(row[1]), hmStart: number(row[2]), hmEnd: number(row[3]), workingHours: number(row[4]), estimatedWorkingHours: number(row[5]), fuelRefill: number(row[6]), fuelPerHour: number(row[7]), actualFuelUsage: number(row[8]), workStatus, notes: text(row[11]) || null };
     }).filter((activity): activity is NonNullable<typeof activity> => activity !== null) : [];
-    plots.push({ code, spk: hasSpk ? text(values[index]?.[2]) || null : null, pricePerHa: number(values[codeIndex + 1]?.[2]), area: number(values[codeIndex + 3]?.[2]), sourceRow: codeIndex + 1, spkSourceRow: hasSpk ? index + 1 : codeIndex + 1, areaSourceRow: codeIndex + 4, activities });
+    const valueRow = values[codeIndex + 2];
+    const fuelRow = values[codeIndex + 4];
+    plots.push({
+      code,
+      spk: hasSpk ? text(values[index]?.[2]) || null : null,
+      pricePerHa: number(values[codeIndex + 1]?.[2]),
+      totalValue: text(valueRow?.[0]) === "Total Nilai Petak" ? number(valueRow?.[2]) : null,
+      area: number(values[codeIndex + 3]?.[2]),
+      totalFuelConsumption: text(fuelRow?.[0]) === "Total Konsumsi Solar" ? number(fuelRow?.[2]) : null,
+      sourceRow: codeIndex + 1,
+      spkSourceRow: hasSpk ? index + 1 : codeIndex + 1,
+      areaSourceRow: codeIndex + 4,
+      activities,
+    });
   }
   return plots;
 }

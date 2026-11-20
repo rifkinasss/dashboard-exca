@@ -1,32 +1,54 @@
+import { Button } from "@/components/ui/button";
 import type {
-  DataQualityIssue,
   InventoryPlot,
   ValidatedOverviewRecord,
 } from "../types";
 import { measurement } from "../lib/calculate-kpis";
 import { plotDetails } from "../lib/interactive-monitoring";
 import { formatDate, formatNumber } from "../lib/format";
+import { calculatePlotPrice, type PlotPrice } from "../../management/lib/plot-price";
+import type { PlotSheetSummary } from "../../management/lib/plot-sheet";
+
+const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 2 });
+const summaryNumber = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
+const displayMoney = (value: number | null) => value === null ? "Belum tersedia" : rupiah.format(value);
+const displayMeasurement = (value: number | null, unit: string) => value === null ? "Belum tersedia" : `${summaryNumber.format(value)} ${unit}`;
 
 export function PlotDetail({
   plot,
   allRows,
   periodRows,
-  issues,
+  plotPrices,
+  plotSheetSummaries,
   onClose,
 }: {
   plot: InventoryPlot;
   allRows: ValidatedOverviewRecord[];
   periodRows: ValidatedOverviewRecord[];
-  issues: DataQualityIssue[];
+  plotPrices: PlotPrice[] | null;
+  plotSheetSummaries: PlotSheetSummary[];
   onClose: () => void;
 }) {
-  const detail = plotDetails(plot.code, allRows, periodRows);
-  const sourceRows = new Set(
-    allRows
-      .filter(({ record }) => record.plotCode === plot.code)
-      .map(({ record }) => record.source.row),
+  const { activity } = plotDetails(plot.code, allRows, periodRows);
+  const spks = [...new Set(allRows.flatMap(({ record, duplicateOf }) =>
+    record.plotCode === plot.code && duplicateOf === null && record.spkNumber ? [record.spkNumber] : [],
+  ))];
+  const matchingBlocks = plotSheetSummaries.filter((summary) =>
+    summary.code.toUpperCase() === plot.code.toUpperCase() &&
+    (!spks.length || !summary.spk || spks.includes(summary.spk)),
   );
-  const relevant = issues.filter((issue) => sourceRows.has(issue.source.row));
+  const sheet = matchingBlocks.length === 1 ? matchingBlocks[0] : null;
+  const area = sheet?.area ?? plot.area;
+  const totalFuel = sheet ? sheet.totalFuelConsumption : plot.cumulativeFuelMetadata.value;
+  const fallbackPrice = sheet ? null : calculatePlotPrice(plotPrices, { ...plot, spks });
+  const summary = [
+    ["No. SPK", sheet?.spk ?? (spks.join(", ") || "Belum tersedia")],
+    ["Kode Petak", plot.code],
+    ["Harga Petak / Ha", displayMoney(sheet?.pricePerHa ?? fallbackPrice?.pricePerHa ?? null)],
+    ["Total Nilai Petak", displayMoney(sheet?.totalValue ?? fallbackPrice?.amount ?? null)],
+    ["Luas Petak", displayMeasurement(area, "Ha")],
+    ["Total Konsumsi Solar", displayMeasurement(totalFuel === null ? null : Math.round(totalFuel), "L")],
+  ];
   const displayDate = (date: string | null) =>
     date ? formatDate(date) : "N/A";
   return (
@@ -35,54 +57,21 @@ export function PlotDetail({
         <div>
           <h2 id="detail-title">Detail petak {plot.code}</h2>
           <p>
-            Pengukuran dan riwayat mengikuti filter dashboard; pilih semua
-            tanggal untuk melihat seluruh aktivitas bertanggal.
+            Riwayat aktivitas mengikuti filter dashboard.
           </p>
         </div>
-        <button className="detail-action" onClick={onClose}>
+        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onClose}>
           Tutup detail
-        </button>
+        </Button>
       </div>
-      <div className="detail-grid">
-        <div>
-          Luas <strong>{formatNumber(plot.area)} Ha</strong>
-        </div>
-        <div>
-          Status hingga akhir periode{" "}
-          <strong>
-            {plot.statusAmbiguous
-              ? "Perlu tinjau"
-              : (plot.status ?? "Belum diketahui")}
-          </strong>
-        </div>
-        <div>
-          Status terbaru dalam cakupan SPK{" "}
-          <strong>
-            {detail.latest.ambiguous
-              ? "Perlu tinjau"
-              : (detail.latest.status ?? "Belum diketahui")}
-          </strong>
-        </div>
-        <div>
-          Aktivitas pertama · cakupan SPK{" "}
-          <strong>{displayDate(detail.firstDate)}</strong>
-        </div>
-        <div>
-          Aktivitas terakhir · cakupan SPK{" "}
-          <strong>{displayDate(detail.lastDate)}</strong>
-        </div>
-        <div>
-          Solar riil periode{" "}
-          <strong>{formatNumber(detail.metrics.fuel)} L</strong>
-        </div>
-        <div>
-          HM periode <strong>{formatNumber(detail.metrics.hours)} jam</strong>
-        </div>
-        <div>
-          Efisiensi pasangan valid{" "}
-          <strong>{formatNumber(detail.metrics.efficiency)} L/jam</strong>
-        </div>
-      </div>
+      <dl className="detail-grid">
+        {summary.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
       <div
         className="table-scroll"
         tabIndex={0}
@@ -92,7 +81,7 @@ export function PlotDetail({
         <table>
           <thead>
             <tr>
-              <th>Tanggal / sumber</th>
+              <th scope="col">Tanggal</th>
               <th>No. SPK</th>
               <th>HM awal</th>
               <th>HM akhir</th>
@@ -105,32 +94,9 @@ export function PlotDetail({
             </tr>
           </thead>
           <tbody>
-            {detail.activity.map((row) => (
+            {activity.map((row) => (
               <tr key={row.record.source.row}>
-                <th scope="row">
-                  {displayDate(row.record.date)}
-                  <br />
-                  {row.record.source.worksheet}!{row.record.source.row}
-                  {row.record.plotCodeSource &&
-                    row.record.plotCodeSource.row !== row.record.source.row && (
-                      <>
-                        <br />
-                        <span>
-                          Kode petak: C{row.record.plotCodeSource.row} (sel
-                          gabungan)
-                        </span>
-                      </>
-                    )}
-                  {row.record.spkSource &&
-                    row.record.spkSource.row !== row.record.source.row && (
-                      <>
-                        <br />
-                        <span>
-                          SPK: B{row.record.spkSource.row} (sel gabungan)
-                        </span>
-                      </>
-                    )}
-                </th>
+                <th scope="row">{displayDate(row.record.date)}</th>
                 <td>{row.record.spkNumber ?? "N/A"}</td>
                 {(
                   [
@@ -154,23 +120,11 @@ export function PlotDetail({
           </tbody>
         </table>
       </div>
-      {!detail.activity.length && (
+      {!activity.length && (
         <p className="empty-state">
           Tidak ada aktivitas bertanggal yang cocok dengan filter.
         </p>
       )}
-      <details>
-        <summary className="table-footnote">
-          Kualitas data dalam cakupan SPK · {relevant.length} temuan
-        </summary>
-        <ul className="detail-issues">
-          {relevant.map((issue, index) => (
-            <li key={`${issue.source.row}-${issue.code}-${index}`}>
-              {issue.source.worksheet}!{issue.source.row}: {issue.message}
-            </li>
-          ))}
-        </ul>
-      </details>
     </section>
   );
 }

@@ -1002,9 +1002,11 @@ tbody tr:hover {
 
 .detail-action { color: var(--primary-hover); text-decoration: underline; cursor: pointer; font-weight: 600; }
 .detail-action:focus-visible { outline: 2px solid var(--primary-hover); outline-offset: 3px; }
-.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; padding: 18px 0; color: #64748b; font-size: 13px; }
-.detail-grid strong { display: block; color: #1e293b; margin-top: 4px; }
-.detail-issues { padding: 0 24px 16px; font-size: 13px; line-height: 1.6; }
+.detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0 19px 16px; overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--border); color: var(--muted-foreground); font-size: 13px; }
+.detail-grid > div { min-width: 0; padding: 12px 16px; background: var(--background); }
+.detail-grid dd { margin: 4px 0 0; color: var(--heading); font-weight: 700; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container operational-dashboard (min-width: 1040px) { .detail-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 .quality-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 12px 0; font-size: 13px; }
 .quality-filters label { display: grid; gap: 4px; }
 .quality-filters select, .quality-filters input, .chart-panel select { border: 1px solid #cbd5e1; border-radius: 5px; padding: 6px; background: white; color: #334155; max-width: 190px; }
@@ -1062,7 +1064,7 @@ tbody tr:hover { background: #fff7f1; }
 .status-label[data-status="Mulai pengerjaan"] { background: #ff8b42; color: #481a05; }
 .status-label[data-status="Dalam pengerjaan"] { background: #ffd184; color: #573000; }
 .status-label[data-status="Selesai"] { background: #a5d7a0; color: #174522; }
-.summary-panel .detail-grid, .summary-panel .quality-filters { padding-inline: 19px; }
+.summary-panel .quality-filters { padding-inline: 19px; }
 @media (max-width: 1400px) and (min-width: 901px) { .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .kpi-card { grid-column: auto; } }
 @media (max-width: 1199px) and (min-width: 901px) { .chart-grid > .chart-panel:nth-child(1), .chart-grid > .chart-panel:nth-child(2), .chart-grid > .status-panel, .chart-grid > .chart-panel, .chart-grid > .summary-panel { grid-column: span 6; } }
 @media (max-width: 900px) {

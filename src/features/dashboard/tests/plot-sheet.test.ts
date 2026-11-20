@@ -7,9 +7,9 @@ test("plot activity writer index points at the header after the updated plot blo
     ["No. SPK"],
     ["Kode Petak", null, "12A/71C"],
     ["Harga Petak / Ha", null, 4910200],
-    ["Total Nilai Petak"],
+    ["Total Nilai Petak", null, 43700780],
     ["Luas Petak", null, 8.9, "Hektar"],
-    ["Total Konsumsi Solar"],
+    ["Total Konsumsi Solar", null, 0],
     [],
     ["No", "Tanggal", "HM Awal", "HM Akhir", "HM Kerja (Jam)", "Est. Jam Kerja", "Pengisian Solar (L)", "Pemakaian Solar per Jam (L/Hr)", "Pemakaian Solar Riil (L)", "Sisa/Stok Tangki (L)", "Status Pekerjaan", "Keterangan"],
     ...Array.from({ length: 7 }, (_, index) => [index + 1, 46335 + index, 304.1 + index, 310.1 + index, 6, 6, 0, 9.9, 59.4, 0, index === 6 ? "Garap Petak Berlangsung" : "", ""]),
@@ -20,6 +20,8 @@ test("plot activity writer index points at the header after the updated plot blo
   const plot = parsePlotSheet(rows)[0];
 
   assert.ok(plot);
+  assert.equal(plot.totalValue, 43700780);
+  assert.equal(plot.totalFuelConsumption, 0);
   assert.equal(plot.sourceRow, 2);
   assert.equal(rows[plotActivityHeaderIndex(plot.sourceRow)]?.[0], "No");
   assert.equal(plotActivityTotalIndex(rows, plotActivityHeaderIndex(plot.sourceRow)), 15);
