@@ -1631,14 +1631,25 @@ tbody tr:hover { background: #FFFAF5; }
 .dashboard-shell .dashboard-header p { margin-top: 3px; color: var(--muted-foreground); font-size: 13px; }
 .dashboard-shell > .dashboard-main { width: 100%; max-width: none; margin: 0; padding: 0; }
 .dashboard-shell .section-heading { margin: 14px 0 10px; }
-.dashboard-shell .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.dashboard-shell .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .dashboard-shell .kpi-card {
   grid-column: auto;
-  min-height: 118px;
+  min-height: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
   border-color: var(--border);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgb(15 23 42 / .035);
 }
+.dashboard-shell .kpi-card > div { flex: 1; min-width: 0; }
+.dashboard-shell .kpi-icon { width: 32px; height: 32px; }
+.dashboard-shell .kpi-icon svg { width: 18px; height: 18px; }
+.dashboard-shell :is(.kpi-value, .target-percentage) { margin: 3px 0 1px; font-size: 24px; line-height: 1.15; white-space: normal; overflow-wrap: anywhere; }
+.dashboard-shell .target-card :is(.target-percentage, .target-value) { display: inline-block; margin-inline-end: 6px; }
+.dashboard-shell .target-card .target-value { color: var(--muted-foreground); }
+.dashboard-shell .target-card progress { height: 5px; margin: 4px 0; }
+.dashboard-shell .target-card .target-prompt { margin-top: 1px; color: var(--muted-foreground); }
 .dashboard-shell .panel { border-color: var(--border); box-shadow: 0 1px 3px rgb(15 23 42 / .035); }
 .dashboard-shell .chart-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
 .dashboard-shell .chart-grid > .chart-panel { grid-column: 1 / -1; min-width: 0; min-height: 340px; }
@@ -1784,8 +1795,7 @@ tbody tr:hover { background: #FFFAF5; }
   .source-alert-brief { gap: 6px; }
   .source-alert-last-sync { order: 3; flex-basis: calc(100% - 25px); font-size: 10px; }
   .source-alert-chevron { margin-left: auto; }
-  .dashboard-shell .kpi-grid { gap: 8px; }
-  .dashboard-shell .kpi-card { min-height: 106px; padding: 12px 9px; }
+  .dashboard-shell .kpi-card { padding-inline: 9px; }
   .dashboard-shell .chart-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .dashboard-shell .chart-grid > .chart-panel { grid-column: 1 / -1; min-height: 0; padding: 13px; }
   .dashboard-shell .chart-area, .dashboard-shell .chart-wide .chart-area { height: 215px; }
@@ -1908,6 +1918,8 @@ tbody tr:hover { background: #FFFAF5; }
 
 .app-toast-viewport { position: fixed; z-index: 10000; right: 1rem; bottom: 1rem; display: flex; flex-direction: column; gap: .75rem; width: min(24rem, calc(100vw - 2rem)); outline: none; }
 dialog .app-toast-viewport { position: absolute; width: min(24rem, calc(100% - 2rem)); }
+dialog.plot-action-dialog .app-toast-viewport { position: static; width: auto; }
+dialog.plot-action-dialog .app-toast-viewport:has(.app-toast) { margin: 0 1rem 1rem; }
 .app-toast { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--card); color: var(--foreground); box-shadow: 0 12px 30px rgb(15 23 42 / .15); }
 .app-toast > svg { flex: none; width: 20px; height: 20px; color: var(--primary); }
 .app-toast[data-kind="success"] > svg { color: #16a34a; }

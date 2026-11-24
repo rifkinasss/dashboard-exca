@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { Activity, ArrowDown, ArrowUp, CalendarDays, Map, Plus, RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ActivityDetail } from "./activity-detail-dialog";
+import { DeleteActivityDialog } from "./delete-activity-dialog";
 import { ActivityDataTable } from "./activity-data-table";
+import { DraftModal } from "./draft-modal";
+import { PlotEntryDialog } from "./plot-entry-dialog";
+import { latestDatedPlotActivity, type PlotActivity } from "../lib/plot-activity-edit";
 import { ActivityFormDialog } from "@/features/activities/components/activity-form-dialog";
 import { FuelFormDialog } from "@/features/fuel/components/fuel-form-dialog";
-import { formatNumber } from "@/features/dashboard/lib/format";
 import type { resolveWithdrawalPricing } from "@/features/dashboard/lib/fuel-price";
 
 export type ManagedRecordKind = "activity" | "fuel" | "finance";
-export interface ManagedRecord { key: string; primary: string; plot: string; plotId?: string; spk: string; date: string; value: string; status: string; search: string; details: [string, string][]; issues: string[]; sortValue: number | string | null; purchases?: { invalidRows: number; records: { liters: number; pricing: ReturnType<typeof resolveWithdrawalPricing> }[] } | null }
+export interface ManagedRecord { sheetActivity?: PlotActivity; key: string; primary: string; plot: string; plotId?: string; spk: string; date: string; value: string; status: string; search: string; details: [string, string][]; issues: string[]; sortValue: number | string | null; purchases?: { invalidRows: number; records: { liters: number; pricing: ReturnType<typeof resolveWithdrawalPricing> }[] } | null }
 type SortKey = "primary" | "plot" | "date" | "value";
 const titles = { activity: "Aktivitas Operasional", fuel: "Pengisian Solar", finance: "Data Keuangan" };
 const subtitles = {
@@ -22,7 +25,11 @@ const subtitles = {
   finance: "Snapshot dan nilai keuangan sumber; tanggal transaksi tidak tersedia pada kontrak saat ini.",
 };
 
-export function RecordDirectory({ kind, rows, plotCodes, spkNumbers, qualityCount }: { kind: ManagedRecordKind; rows: ManagedRecord[]; plotCodes: string[]; spkNumbers: string[]; qualityCount: number }) {
+type ActivityAccess = { worksheet: string | null; canInput: boolean; canDelete: boolean; writerReady: boolean; authReady: boolean; userEmail: string | null; plots: { code: string; activities: PlotActivity[] }[] };
+
+export function RecordDirectory({ kind, rows, plotCodes, spkNumbers, qualityCount, activityAccess }: { kind: ManagedRecordKind; rows: ManagedRecord[]; plotCodes: string[]; spkNumbers: string[]; qualityCount: number; activityAccess?: ActivityAccess }) {
+  const [entryCode, setEntryCode] = useState<string | null>(null);
+  const [entryOpen, setEntryOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [plot, setPlot] = useState("");
   const [spk, setSpk] = useState("");
@@ -32,6 +39,7 @@ export function RecordDirectory({ kind, rows, plotCodes, spkNumbers, qualityCoun
   const [sort, setSort] = useState<{ key: SortKey; direction: 1 | -1 }>({ key: "date", direction: -1 });
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<ManagedRecord | null>(null);
+  const [deletingActivity, setDeletingActivity] = useState<ManagedRecord | null>(null);
   const [editing, setEditing] = useState<ManagedRecord | null | undefined>(undefined);
   const visible = useMemo(() => rows.filter((row) => {
     if (query && !row.search.toLocaleLowerCase("id-ID").includes(query.trim().toLocaleLowerCase("id-ID"))) return false;
@@ -60,11 +68,15 @@ export function RecordDirectory({ kind, rows, plotCodes, spkNumbers, qualityCoun
   const availableStatuses = kind === "activity" ? [...new Set(rows.map((row) => row.status).filter(Boolean))] : [];
 
   if (kind === "activity") {
+    const canEdit = activityAccess?.canInput && activityAccess.writerReady;
+    const entryPlot = activityAccess?.plots.find(({ code }) => code === entryCode);
+    const previousHm = latestDatedPlotActivity(entryPlot?.activities.filter(({ hmEnd }) => hmEnd !== null) ?? []);
+    const latestStatus = latestDatedPlotActivity(entryPlot?.activities.filter(({ workStatus }) => workStatus) ?? [])?.workStatus;
     const lastDate = visible.map((row) => row.date).filter(Boolean).sort().at(-1);
     const dateLabel = (date: string) => date ? new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T00:00:00Z`)) : "—";
     const reset = () => { setQuery(""); setPlot(""); setFrom(""); setTo(""); setStatus("all"); setPage(1); };
     return <main className="directory-page activity-page">
-      <header className="activity-heading"><div><span className="directory-eyebrow">MANAJEMEN DATA</span><h1>Aktivitas Operasional</h1><p>Pantau riwayat pekerjaan dan pengisian solar di setiap petak.</p></div><Button onClick={() => startEdit()}><Plus data-icon="inline-start" aria-hidden="true" />Tambah aktivitas</Button></header>
+      <header className="activity-heading"><div><span className="directory-eyebrow">MANAJEMEN DATA</span><h1>Aktivitas Operasional</h1><p>Pantau riwayat pekerjaan dan pengisian solar di setiap petak.</p></div>{canEdit && Boolean(activityAccess?.plots.length) && <Button onClick={() => { setEntryCode(null); setEntryOpen(true); }}><Plus data-icon="inline-start" aria-hidden="true" />Tambah aktivitas</Button>}</header>
       <section className="activity-summary" aria-label="Ringkasan hasil filter">
         <div><span className="activity-summary-icon"><Activity aria-hidden="true" /></span><span><small>Aktivitas ditampilkan</small><strong>{visible.length}</strong><em>Catatan sesuai filter</em></span></div>
         <div><span className="activity-summary-icon"><Map aria-hidden="true" /></span><span><small>Petak tercatat</small><strong>{new Set(visible.map((row) => row.plot).filter(Boolean)).size}</strong><em>Petak dalam hasil filter</em></span></div>
@@ -79,10 +91,21 @@ export function RecordDirectory({ kind, rows, plotCodes, spkNumbers, qualityCoun
           <label>Status pekerjaan<select value={status} onChange={(event) => setFilter(setStatus)(event.target.value)}><option value="all">Semua status</option>{availableStatuses.map((value) => <option key={value}>{value}</option>)}</select></label>
           <Button variant="outline" onClick={reset} aria-label="Reset filter"><RotateCcw data-icon="inline-start" aria-hidden="true" />Reset</Button>
         </div>
-        <ActivityDataTable rows={visible} page={current} onPageChange={setPage} onDetail={setSelected} />
+        <ActivityDataTable rows={visible} page={current} onPageChange={setPage} onDetail={setSelected} onEdit={canEdit ? startEdit : undefined} onDelete={activityAccess?.canDelete && activityAccess.writerReady ? setDeletingActivity : undefined} />
       </section>
       {selected && <ActivityDetail row={selected} close={() => setSelected(null)} />}
-      {editing !== undefined && <ActivityFormDialog initial={editing?.details} plotCodes={plotCodes} onClose={() => setEditing(undefined)} />}
+      {deletingActivity?.sheetActivity && <DeleteActivityDialog code={deletingActivity.plot} activity={deletingActivity.sheetActivity} onClose={() => setDeletingActivity(null)} />}
+      {editing?.sheetActivity && <ActivityFormDialog activity={editing.sheetActivity} plotCode={editing.plot} worksheet={activityAccess?.worksheet ?? null} onClose={() => setEditing(undefined)} />}
+      {entryOpen && activityAccess && <DraftModal title="Pilih petak" description="Pilih petak untuk menambah aktivitas." dirty={false}
+        onClose={() => { setEntryOpen(false); setEntryCode(null); }} onReset={() => setEntryCode(null)} onSave={() => setEntryOpen(false)} saveDisabled={!entryCode} saveLabel="Lanjutkan">
+        <label>Kode petak<select value={entryCode ?? ""} onChange={(event) => setEntryCode(event.target.value || null)}>
+          <option value="">Pilih petak</option>{activityAccess.plots.map(({ code }) => <option key={code}>{code}</option>)}
+        </select></label>
+      </DraftModal>}
+      {!entryOpen && entryPlot && activityAccess && <PlotEntryDialog worksheet={activityAccess.worksheet} plotCode={entryPlot.code}
+        previousHm={previousHm ? { value: previousHm.hmEnd!, sourceRow: previousHm.sourceRow } : null}
+        activityDisabled={latestStatus === "Selesai"} writerReady={activityAccess.writerReady} canWrite={activityAccess.canInput}
+        authReady={activityAccess.authReady} userEmail={activityAccess.userEmail} onClose={() => setEntryCode(null)} /> }
     </main>;
   }
 
@@ -105,24 +128,6 @@ export function RecordDirectory({ kind, rows, plotCodes, spkNumbers, qualityCoun
     {selected && <RecordDetail row={selected} close={() => setSelected(null)} />}
     {editing !== undefined && kind === "fuel" && <FuelFormDialog initial={editing?.details} plotCodes={plotCodes} onClose={() => setEditing(undefined)} />}
   </main>;
-}
-
-function ActivityDetail({ row, close }: { row: ManagedRecord; close: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => { if (dialog.current && !dialog.current.open) dialog.current.showModal(); }, []);
-  const value = (name: string) => row.details.find(([label]) => label === name)?.[1] || "—";
-  const date = row.date ? new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${row.date}T00:00:00Z`)) : "Tanggal belum tersedia";
-  const measurement = (name: string, unit: string) => value(name) === "—" ? "—" : `${value(name)} ${unit}`;
-  return <dialog ref={dialog} className="directory-drawer activity-detail" aria-labelledby="activity-detail-title" onCancel={(event) => { event.preventDefault(); close(); }} onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
-    <section className="directory-drawer-panel"><header><div><span className="directory-eyebrow">RINCIAN AKTIVITAS</span><h2 id="activity-detail-title">{row.plot || "Petak belum diketahui"}</h2><p className="activity-detail-date">{date}</p></div><Button variant="outline" onClick={close}>Tutup</Button></header>
-      <div className="activity-detail-overview"><span className="activity-status" data-status={row.status === "Selesai" ? "complete" : row.status === "Dalam pengerjaan" ? "progress" : "other"}>{row.status || "Belum diketahui"}</span><span>SPK {row.spk || "belum tersedia"}</span></div>
-      <section className="activity-detail-section"><h3>Jam kerja</h3><dl><div><dt>HM awal</dt><dd>{measurement("HM awal", "jam")}</dd></div><div><dt>HM akhir</dt><dd>{measurement("HM akhir", "jam")}</dd></div><div><dt>HM kerja</dt><dd>{measurement("HM kerja", "jam")}</dd></div><div><dt>Estimasi jam kerja</dt><dd>{measurement("Estimasi jam kerja", "jam")}</dd></div></dl></section>
-      <section className="activity-detail-section"><h3>Solar</h3><dl><div><dt>Pengisian solar</dt><dd>{measurement("Pengisian solar", "L")}</dd></div></dl></section>
-      <section className="activity-detail-section"><h3>Pembelian solar</h3><p className="activity-purchase-note">Transaksi untuk petak dan tanggal yang sama; belum tentu terkait langsung dengan aktivitas ini.</p>{!row.date || !row.plot ? <p>Tanggal atau kode petak belum tersedia untuk mencocokkan pembelian.</p> : !row.purchases ? <p>Data pembelian belum tersedia.</p> : row.purchases.records.length === 0 ? <p>Tidak ada transaksi yang cocok pada tanggal ini.</p> : <div className="activity-purchase-list">{row.purchases.records.map(({ liters, pricing }, index) => <div key={index}><strong>{formatNumber(liters)} L</strong><span>Harga / L: {pricing.price === null ? pricing.kind === "review" ? "Perlu tinjauan" : "Belum tersedia" : `Rp ${formatNumber(pricing.price)}`}</span><span>Biaya: {pricing.cost === null ? pricing.kind === "review" ? "Perlu tinjauan" : "Belum tersedia" : `Rp ${formatNumber(pricing.cost)}`}{pricing.kind === "estimated" && " · Estimasi"}</span></div>)}</div>}{!!row.purchases?.invalidRows && <p className="activity-purchase-note">Sebagian baris pembelian tidak valid dan belum dapat dicocokkan.</p>}</section>
-      <section className="activity-detail-section"><h3>Keterangan</h3><p>{value("Keterangan") === "—" ? "Tidak ada keterangan." : value("Keterangan")}</p></section>
-      {row.plotId && <div className="activity-detail-footer"><Link href={`/petak/${row.plotId}`}>Lihat detail Petak Lahan <span aria-hidden="true">→</span></Link></div>}
-    </section>
-  </dialog>;
 }
 
 function RecordDetail({ row, close }: { row: ManagedRecord; close: () => void }) {

@@ -60,7 +60,7 @@ export async function readGoogleOverview(config: GoogleSheetsConfig, request: Sh
   return { rows: mapOverviewValues(payload), worksheet: config.worksheet, plotCodeMerges, spkMerges };
 }
 
-function mapPlot2026Overview(payload: unknown): RawOverviewRow[] {
+export function mapPlot2026Overview(payload: unknown, allowEmpty = false): RawOverviewRow[] {
   if (!isObject(payload) || (payload.majorDimension !== undefined && payload.majorDimension !== "ROWS")) throw new SheetsSyncError("malformed_response");
   if (!Array.isArray(payload.values) || !payload.values.length) throw new SheetsSyncError("empty_worksheet");
   const values = payload.values.map((row): RawCell[] => {
@@ -69,7 +69,7 @@ function mapPlot2026Overview(payload: unknown): RawOverviewRow[] {
   });
   const plots = parsePlotSheet(values);
   const plotActivityHeaders = [overviewColumns[0], ...overviewColumns.slice(5)];
-  if (!plots.length || plots.some((plot) => plotActivityHeaders.some(({ header }, index) => headerText(values[plot.sourceRow + 5]?.[index]) !== header))) {
+  if ((!allowEmpty && !plots.length) || plots.some((plot) => plotActivityHeaders.some(({ header }, index) => headerText(values[plot.sourceRow + 5]?.[index]) !== header))) {
     throw new SheetsSyncError("headers_mismatch");
   }
 

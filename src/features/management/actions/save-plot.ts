@@ -5,10 +5,15 @@ import { canInputTransactions } from "@/features/auth/allowlist";
 import { readAccessUsers } from "@/features/settings/data/viewer-access";
 import { revalidatePath } from "next/cache";
 import { parseOverviewNumber } from "@/features/dashboard/lib/normalize-overview";
+import { invalidateFuelWithdrawals } from "@/features/dashboard/data/server/fuel-withdrawal-source";
+import { legacyPlotRouteId } from "../lib/plot-state";
 import { invalidateDashboardData } from "@/features/dashboard/data/server/dashboard-source";
+import { invalidateFinanceData } from "@/features/finance/data/server/finance-source";
+import { invalidatePlotPrices } from "../data/server/plot-price-source";
 import { parsePlotMeasurement } from "../lib/plot-measurement";
+import { activityEditColumns, type ActivityEditDraft } from "../lib/plot-activity-edit";
 import { toPlotSheetStatus } from "../lib/plot-sheet";
-import { addPlotSpk, createPlotActivity, createPlotBlock } from "../data/server/plot-sheet-writer";
+import { addPlotSpk, changePlot, createPlotActivity, createPlotBlock, plotWriterReady } from "../data/server/plot-sheet-writer";
 
 export async function savePlot(input: unknown) {
   if (process.env.ENABLE_PLOT_WRITES !== "true") return { ok: false, message: "Penyimpanan petak belum diaktifkan." };
@@ -70,10 +75,101 @@ export async function savePlotActivity(input: unknown) {
   const statusInput = text("status");
   const status = statusInput ? toPlotSheetStatus(statusInput) : "";
   if (statusInput && !status) return { ok: false, message: "Status pekerjaan tidak valid." };
-  const result = await createPlotActivity({ code, date: input.date, hmStart: hmStart.value, hmEnd: hmEnd.value, fuelPerHour: input.hasActivity ? fuelPerHour.value : null, refill: liters ?? 0, status, notes: text("notes").slice(0, 1000) }, email);
-  if (result.ok || result.uncertain) {
-    invalidateDashboardData();
-    revalidatePath("/petak/[plotId]", "page");
-  }
+  const result = await createPlotActivity({ code, date: input.date, hmStart: hmStart.value, hmEnd: hmEnd.value, fuelPerHour: input.hasActivity ? fuelPerHour.value : null, refill: liters ?? 0, status: status ?? "", notes: text("notes").slice(0, 1000) }, email);
+  if (result.ok || result.uncertain) refreshPlotPages();
   return result;
+}
+
+
+function refreshPlotPages() {
+  invalidateDashboardData();
+  revalidatePath("/petak");
+  revalidatePath("/petak/[plotId]", "page");
+  revalidatePath("/aktivitas");
+  revalidatePath("/spk");
+  revalidatePath("/keuangan");
+}
+
+function validTarget(input: unknown): input is Record<string, unknown> & { code: string; sourceRow: number } {
+  if (!input || typeof input !== "object") return false;
+  const { code, sourceRow } = input as Record<string, unknown>;
+  return typeof code === "string" && code.length <= 100 && code.trim().length > 0
+    && typeof sourceRow === "number" && Number.isSafeInteger(sourceRow) && sourceRow >= 1;
+}
+
+export async function updatePlotActivity(input: unknown) {
+  if (!plotWriterReady()) return { ok: false, message: "Penyimpanan aktivitas petak belum diaktifkan." };
+  const email = (await auth())?.user?.email;
+  const allowed = email && (await isAdministrator(email) || await readAccessUsers().then((users) => canInputTransactions(email, users)).catch(() => false));
+  if (!email || !allowed) return { ok: false, message: "Masuk dengan akun yang memiliki izin mencatat transaksi." };
+  if (!validTarget(input) || typeof input.snapshot !== "string" || input.snapshot.length > 65000 || !input.draft || typeof input.draft !== "object") {
+    return { ok: false, message: "Identitas aktivitas tidak valid." };
+  }
+  const draft = input.draft as Record<string, unknown>;
+  if (Object.keys(activityEditColumns).some((key) => typeof draft[key] !== "string" || draft[key].length > 50000)) {
+    return { ok: false, message: "Isian aktivitas tidak valid." };
+  }
+  const result = await changePlot({ kind: "edit", code: input.code, sourceRow: input.sourceRow, snapshot: input.snapshot, draft: draft as ActivityEditDraft, close: input.close === true }, email);
+  if (result.ok || result.uncertain) refreshPlotPages();
+  return result;
+}
+
+export async function deletePlot(input: unknown) {
+  if (!plotWriterReady()) return { ok: false, message: "Penyimpanan petak belum diaktifkan." };
+  const email = (await auth())?.user?.email;
+  if (!email || !await isAdministrator(email)) return { ok: false, message: "Masuk dengan akun administrator yang diizinkan." };
+  if (!validTarget(input)) return { ok: false, message: "Identitas petak tidak valid." };
+  const result = await changePlot({ kind: "delete", code: input.code, sourceRow: input.sourceRow }, email);
+  if (result.ok || result.uncertain) refreshPlotPages();
+  return result;
+}
+
+export async function deletePlotActivity(input: unknown) {
+  if (!plotWriterReady()) return { ok: false, message: "Penyimpanan aktivitas petak belum diaktifkan." };
+  const email = (await auth())?.user?.email;
+  if (!email || !await isAdministrator(email)) return { ok: false, message: "Masuk dengan akun administrator yang diizinkan." };
+  if (!validTarget(input) || typeof input.snapshot !== "string" || input.snapshot.length > 65000) {
+    return { ok: false, message: "Identitas aktivitas tidak valid." };
+  }
+  const result = await changePlot({ kind: "delete-activity", code: input.code, sourceRow: input.sourceRow, snapshot: input.snapshot }, email);
+  if (result.ok || result.uncertain) refreshPlotPages();
+  return result;
+}
+
+export async function updatePlotMetadata(input: unknown) {
+  if (!plotWriterReady()) return { ok: false, message: "Penyimpanan petak belum diaktifkan." };
+  const email = (await auth())?.user?.email;
+  if (!email || !await isAdministrator(email)) return { ok: false, message: "Masuk dengan akun administrator yang diizinkan." };
+  if (!validTarget(input) || typeof input.nextCode !== "string" || typeof input.spk !== "string"
+      || typeof input.pricePerHa !== "string" || typeof input.area !== "string" || !input.previous || typeof input.previous !== "object") {
+    return { ok: false, message: "Data petak tidak valid." };
+  }
+  const previous = input.previous as Record<string, unknown>;
+  if ((previous.spk !== null && typeof previous.spk !== "string")
+      || (previous.pricePerHa !== null && (typeof previous.pricePerHa !== "number" || !Number.isFinite(previous.pricePerHa)))
+      || (previous.area !== null && (typeof previous.area !== "number" || !Number.isFinite(previous.area)))) {
+    return { ok: false, message: "Data awal petak tidak valid. Muat ulang halaman." };
+  }
+  const code = input.nextCode.trim().replace(/\s+/g, " ");
+  const spk = input.spk.trim();
+  const price = parseOverviewNumber(input.pricePerHa, "id-ID");
+  const area = parseOverviewNumber(input.area, "id-ID");
+  if (!/^[\p{L}\p{N}][\p{L}\p{N} /._-]{0,49}$/u.test(code)) return { ok: false, message: "Kode petak tidak valid." };
+  if (spk && !/^[\p{L}\p{N}][\p{L}\p{N} /._-]{0,79}$/u.test(spk)) return { ok: false, message: "Nomor SPK tidak valid." };
+  if (price.state !== "valid" || !Number.isSafeInteger(price.value) || price.value <= 0) return { ok: false, message: "Harga per hektar harus berupa Rupiah bulat lebih besar dari nol." };
+  if (area.state !== "valid" || area.value <= 0) return { ok: false, message: "Luas petak harus berupa angka lebih besar dari nol." };
+  const result = await changePlot({
+    kind: "metadata", code: input.code, sourceRow: input.sourceRow, nextCode: code, spk, pricePerHa: price.value, area: area.value,
+    previous: { spk: previous.spk, pricePerHa: previous.pricePerHa, area: previous.area },
+  }, email);
+  if (result.ok || result.uncertain) {
+    invalidatePlotPrices();
+    invalidateFinanceData();
+    invalidateFuelWithdrawals();
+    refreshPlotPages();
+    revalidatePath("/solar");
+    revalidatePath("/dashboard/keuangan");
+    revalidatePath("/pengaturan");
+  }
+  return { ...result, plotId: result.ok ? legacyPlotRouteId(code) : undefined };
 }

@@ -1,6 +1,6 @@
 import "server-only";
-import { createSheetsRequest } from "@/features/dashboard/data/server/google-sheets";
-import { readSourceConfig } from "@/features/dashboard/data/server/config";
+import { createSheetsRequest } from "../../../dashboard/data/server/google-sheets";
+import { readSourceConfig } from "../../../dashboard/data/server/config";
 import {
   parsePlotSheet,
   isPlot2026Date,
@@ -18,7 +18,7 @@ export function plotWorksheetName(env: Record<string, string | undefined>) {
     : null;
 }
 
-export async function readPlotSheet(): Promise<SheetPlot[]> {
+export async function readPlotSheetRows(): Promise<unknown[][]> {
   const config = readSourceConfig(process.env);
   if (config.source !== "google-sheets")
     throw new Error("Sumber bukan Google Sheets.");
@@ -47,7 +47,15 @@ export async function readPlotSheet(): Promise<SheetPlot[]> {
   )) as { values?: unknown[][] };
   if (!Array.isArray(values.values))
     throw new Error("Data petak kosong atau tidak terbaca.");
-  const plots = parsePlotSheet(values.values);
+  return values.values;
+}
+
+export function parseOperationalPlots(rows: unknown[][], worksheet: string | null): SheetPlot[] {
+  const plots = parsePlotSheet(rows);
   if (worksheet !== plot2026Worksheet) return plots;
   return plots.map((plot) => ({ ...plot, activities: plot.activities.filter(({ date }) => date === null || isPlot2026Date(date)) }));
+}
+
+export async function readPlotSheet(): Promise<SheetPlot[]> {
+  return parseOperationalPlots(await readPlotSheetRows(), plotWorksheetName(process.env));
 }

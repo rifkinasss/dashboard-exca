@@ -9,6 +9,8 @@ import {
 
 let cache: { prices: PlotPrice[]; at: number } | null = null;
 
+export function invalidatePlotPrices() { cache = null; }
+
 export async function getPlotPrices(): Promise<PlotPrice[] | null> {
   try {
     const config = readSourceConfig(process.env);

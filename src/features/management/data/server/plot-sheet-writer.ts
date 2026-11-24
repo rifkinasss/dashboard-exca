@@ -1,17 +1,21 @@
 import "server-only";
 import { JWT } from "google-auth-library";
-import { readSourceConfig } from "@/features/dashboard/data/server/config";
+import { readSourceConfig } from "../../../dashboard/data/server/config";
 import {
-  isPlotFinished,
   isPlot2026Date,
   parsePlotSheet,
   plotActivityAverageIndex,
   plotActivityHeaderIndex,
+  plotActivityHeaders,
   plotActivityTotalIndex,
   plot2026Worksheet,
   plotSheetRange,
 } from "../../lib/plot-sheet";
+import { allOverviewWorksheet, financeWorksheetName } from "../../../finance/types";
+import { fuelSheetConfig, plotPriceSheet } from "../../../dashboard/lib/fuel-sheet-config";
+import { parsePlotPrices } from "../../lib/plot-price";
 import { plotWorksheetName } from "./plot-sheet-source";
+import { activityEditDraft, latestDatedPlotActivity, planActivityEdit, type ActivityEditDraft } from "../../lib/plot-activity-edit";
 
 let saving = false;
 export function plotWriterReady() {
@@ -23,6 +27,287 @@ export function plotWriterReady() {
       process.env.GOOGLE_PRIVATE_KEY,
     )
   );
+}
+
+type PlotChange = { kind: "edit"; code: string; sourceRow: number; snapshot: string; draft: ActivityEditDraft; close: boolean }
+  | { kind: "metadata"; code: string; sourceRow: number; nextCode: string; spk: string; pricePerHa: number; area: number; previous: { spk: string | null; pricePerHa: number | null; area: number | null } }
+  | { kind: "delete"; code: string; sourceRow: number }
+  | { kind: "delete-activity"; code: string; sourceRow: number; snapshot: string };
+
+export async function changePlot(input: PlotChange, actor: string): Promise<{ ok: boolean; message: string; uncertain?: boolean }> {
+  if (!plotWriterReady()) return { ok: false, message: "Penyimpanan petak belum diaktifkan." };
+  if (saving) return { ok: false, message: "Penyimpanan petak sedang berlangsung. Coba lagi setelah selesai." };
+  saving = true;
+  let submitted = false;
+  try {
+    const config = readSourceConfig(process.env);
+    if (config.source !== "google-sheets") return { ok: false, message: "Sumber data bukan Google Sheets." };
+    const worksheet = plotWorksheetName(process.env)!;
+    const auth = new JWT({
+      email: config.email, key: config.privateKey, scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+      transporterOptions: { timeout: 15000, retry: false },
+    });
+    const base = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}`;
+    const get = async <T>(url: string, params: Record<string, string>) =>
+      (await auth.request<T>({ url, params, method: "GET", timeout: 15000, retry: false })).data;
+    const read = async (range: string, valueRenderOption = "UNFORMATTED_VALUE", title = worksheet) =>
+      (await get<{ values?: unknown[][] }>(`${base}/values/${encodeURIComponent(plotSheetRange(title, range))}`, { valueRenderOption })).values ?? [];
+    const [metadata, rows] = await Promise.all([
+      get<{ properties?: { locale?: string }; sheets?: { properties?: { sheetId?: number; title?: string } }[] }>(base, { fields: "properties(locale),sheets(properties(sheetId,title))" }),
+      read("A:L"),
+    ]);
+    const sheetId = metadata.sheets?.find(({ properties }) => properties?.title === worksheet)?.properties?.sheetId;
+    if (typeof sheetId !== "number" || !["id_ID", "id-ID", "id"].includes(metadata.properties?.locale ?? "")) {
+      return { ok: false, message: "Worksheet petak tidak dapat diverifikasi." };
+    }
+    const sheetPlots = parsePlotSheet(rows);
+    const plots = sheetPlots.filter(({ code }) => code.toUpperCase() === input.code.toUpperCase());
+    if (plots.length !== 1) return { ok: false, message: "Blok petak tidak ditemukan atau kodenya ganda. Muat ulang halaman." };
+    const plot = plots[0];
+    const header = plotActivityHeaderIndex(plot.sourceRow);
+    const total = plotActivityTotalIndex(rows, header);
+    const average = plotActivityAverageIndex(rows, total);
+    if (input.kind !== "metadata" && (!plotActivityHeaders.every((label, column) => rows[header]?.[column] === label) || total <= header + 1 || average <= total)) {
+      return { ok: false, message: "Struktur tabel aktivitas petak tidak dapat diverifikasi." };
+    }
+
+    const requests: Record<string, unknown>[] = [];
+    const update = (rowIndex: number, columnIndex: number, userEnteredValue?: Record<string, string | number>, targetSheetId = sheetId) => {
+      requests.push({ updateCells: { start: { sheetId: targetSheetId, rowIndex, columnIndex }, rows: [{ values: [userEnteredValue ? { userEnteredValue } : {}] }], fields: "userEnteredValue" } });
+    };
+    let verify: () => Promise<boolean>;
+    const activity = input.kind === "delete" || input.kind === "metadata" ? undefined : plot.activities.find(({ sourceRow }) => sourceRow === input.sourceRow);
+    if (input.kind === "metadata") {
+      if (plot.sourceRow !== input.sourceRow || plot.pricePerHa !== input.previous.pricePerHa || plot.area !== input.previous.area || plot.spk !== input.previous.spk) {
+        return { ok: false, message: "Data petak sudah berubah. Buka ulang form untuk memuat data terbaru." };
+      }
+      const codeKey = (value: unknown) => String(value ?? "").trim().toUpperCase();
+      const oldCode = codeKey(plot.code);
+      const nextCode = codeKey(input.nextCode);
+      const codeChanged = plot.code !== input.nextCode;
+      const spkChanged = (plot.spk ?? "") !== input.spk;
+      const priceChanged = plot.pricePerHa !== input.pricePerHa;
+      const areaChanged = plot.area !== input.area;
+      if (!codeChanged && !spkChanged && !priceChanged && !areaChanged) return { ok: true, message: "Tidak ada perubahan data petak." };
+      if (nextCode !== oldCode && sheetPlots.some(({ code }) => codeKey(code) === nextCode)) {
+        return { ok: false, message: "Kode petak sudah terdaftar." };
+      }
+      if (spkChanged && (plot.spkSourceRow === plot.sourceRow || rows[plot.spkSourceRow - 1]?.[0] !== "No. SPK")) {
+        return { ok: false, message: "Petak ini belum mempunyai baris No. SPK pada worksheet." };
+      }
+      const amount = input.pricePerHa * input.area;
+      if (!Number.isSafeInteger(input.pricePerHa) || input.pricePerHa <= 0 || input.area <= 0 || !Number.isFinite(amount)) {
+        return { ok: false, message: "Harga per hektar atau luas petak tidak valid." };
+      }
+      if (process.env.FUEL_TESTING_ONLY === "true" && worksheet === plot2026Worksheet) {
+        return { ok: false, message: "Worksheet petak produksi tidak dapat diubah dari mode testing." };
+      }
+      const sheetIdFor = (title: string) => metadata.sheets?.find(({ properties }) => properties?.title === title)?.properties?.sheetId;
+      const master = plotPriceSheet(process.env);
+      if (master === worksheet) return { ok: false, message: "Konfigurasi Master Harga Petak tidak sesuai." };
+      const masterId = sheetIdFor(master);
+      const priceRow = plot.sourceRow + 1;
+      const totalRow = priceRow + 1;
+      const areaRow = totalRow + 1;
+      const startRow = plot.spkSourceRow;
+      const fuelSheet = codeChanged ? fuelSheetConfig(process.env).withdrawal : null;
+      const fuelId = fuelSheet ? sheetIdFor(fuelSheet) : undefined;
+      if (fuelSheet && (fuelSheet === worksheet || fuelSheet === master || typeof fuelId !== "number"
+        || (process.env.FUEL_TESTING_ONLY === "true" && fuelSheet !== "Pengambilan Solar - testing"))) {
+        return { ok: false, message: "Worksheet pembelian solar untuk perubahan kode belum dapat diverifikasi." };
+      }
+      const finance = financeWorksheetName(process.env.GOOGLE_FINANCE_SHEET_NAME);
+      const rekap = new Set([config.worksheet, finance]);
+      rekap.delete(worksheet);
+      const overviewChecks = codeChanged || spkChanged ? [...rekap].filter((name) => typeof sheetIdFor(name) === "number") : [];
+      const [block, masterRows, fuelRows, overviewData] = await Promise.all([
+        read(`A${startRow}:C${areaRow}`, "FORMULA"),
+        typeof masterId === "number" ? read("A5:E", "FORMULA", master) : [],
+        fuelSheet ? read("A4:F", "UNFORMATTED_VALUE", fuelSheet) : [],
+        Promise.all(overviewChecks.map(async (name) => {
+          const column = name === allOverviewWorksheet ? "H" : "C";
+          const [formulas, codes] = await Promise.all([
+            read("A1:P5", "FORMULA", name), read(`${column}2:${column}`, "UNFORMATTED_VALUE", name),
+          ]);
+          return { name, codes, derived: formulas.flat().some((value) => typeof value === "string" && value.startsWith("=") && value.includes("_Petak Overview")) };
+        })),
+      ]);
+      for (const { name, codes, derived } of overviewData) {
+        if (!derived && codes.some(([value]) => codeKey(value) === oldCode)) {
+          return { ok: false, message: `Petak masih tercatat di rekap ${name}. Periksa hubungan data sebelum mengubah kode atau SPK.` };
+        }
+        if (nextCode !== oldCode && codes.some(([value]) => codeKey(value) === nextCode)) {
+          return { ok: false, message: `Kode tujuan sudah tercatat di rekap ${name}.` };
+        }
+      }
+      const formulaAt = (row: number) => String(block[row - startRow]?.[2] ?? "").startsWith("=");
+      if (block[priceRow - startRow]?.[0] !== "Harga Petak / Ha" || block[totalRow - startRow]?.[0] !== "Total Nilai Petak"
+        || (codeChanged && formulaAt(plot.sourceRow)) || (spkChanged && formulaAt(plot.spkSourceRow))
+        || (priceChanged && formulaAt(priceRow)) || (areaChanged && formulaAt(areaRow))) {
+        return { ok: false, message: "Data petak memakai rumus atau struktur yang perlu diperiksa di worksheet." };
+      }
+      const fuelRowsToMove: number[] = [];
+      if (fuelSheet && typeof fuelId === "number") {
+        if (!["No", "Tanggal Ambil", "Solar", "No Petak"].every((label, column) => fuelRows[0]?.[column] === label)) {
+          return { ok: false, message: "Struktur worksheet pembelian solar belum dapat diverifikasi." };
+        }
+        if (nextCode !== oldCode && fuelRows.slice(1).some((row) => codeKey(row[3]) === nextCode)) {
+          return { ok: false, message: "Kode tujuan sudah dipakai pada transaksi pembelian solar." };
+        }
+        fuelRows.slice(1).forEach((row, index) => {
+          if (codeKey(row[3]) === oldCode) fuelRowsToMove.push(index + 5);
+        });
+        if (fuelRowsToMove.length) {
+          const formulas = await read("D4:D", "FORMULA", fuelSheet);
+          if (fuelRowsToMove.some((row) => codeKey(formulas[row - 4]?.[0]) !== oldCode)) {
+            return { ok: false, message: "Kode petak pada transaksi solar memakai rumus atau sudah berubah. Periksa worksheet sebelum menyimpan." };
+          }
+          for (const row of fuelRowsToMove) update(row - 1, 3, { stringValue: input.nextCode }, fuelId);
+        }
+      }
+      let mirrorRow: number | undefined;
+      if (typeof masterId === "number") {
+        parsePlotPrices(masterRows);
+        const matches = masterRows.slice(1).flatMap((row, index) =>
+          codeKey(row[2]) === oldCode ? [{ row, number: index + 6 }] : [],
+        );
+        if (nextCode !== oldCode && masterRows.slice(1).some((row) => codeKey(row[2]) === nextCode)) {
+          return { ok: false, message: "Kode tujuan sudah terdaftar di Master Harga Petak." };
+        }
+        const match = matches[0];
+        if (matches.length > 1 || (match && String(match.row[1] ?? "").trim() !== (plot.spk ?? ""))) {
+          return { ok: false, message: "Pasangan petak dan SPK di Master Harga Petak belum dapat dipastikan." };
+        }
+        if (match) {
+          const previous = match.row[3];
+          if (priceChanged && previous != null && previous !== "" && previous !== input.previous.pricePerHa && previous !== input.pricePerHa) {
+            return { ok: false, message: "Tarif di Master Harga Petak berbeda dari tarif operasional atau memakai rumus. Periksa kedua tarif sebelum menyimpan." };
+          }
+          mirrorRow = match.number;
+          if (codeChanged) update(mirrorRow - 1, 2, { stringValue: input.nextCode }, masterId);
+          if (spkChanged) update(mirrorRow - 1, 1, input.spk ? { stringValue: input.spk } : undefined, masterId);
+          if (priceChanged) update(mirrorRow - 1, 3, { numberValue: input.pricePerHa }, masterId);
+        }
+      } else if (process.env.PLOT_PRICE_SHEET_NAME?.trim()) {
+        return { ok: false, message: "Worksheet Master Harga Petak yang dikonfigurasi tidak ditemukan." };
+      }
+      if (codeChanged) update(plot.sourceRow - 1, 2, { stringValue: input.nextCode });
+      if (spkChanged) update(plot.spkSourceRow - 1, 2, input.spk ? { stringValue: input.spk } : undefined);
+      if (priceChanged) update(priceRow - 1, 2, { numberValue: input.pricePerHa });
+      if (areaChanged) update(areaRow - 1, 2, { numberValue: input.area });
+      if ((priceChanged || areaChanged) && !formulaAt(totalRow)) {
+        update(totalRow - 1, 2, { formulaValue: `=C${priceRow}*C${areaRow}` });
+      }
+      verify = async () => {
+        const [saved, [savedMirror], savedFuel] = await Promise.all([
+          read(`A${startRow}:C${areaRow}`),
+          mirrorRow ? read(`B${mirrorRow}:D${mirrorRow}`, "UNFORMATTED_VALUE", master) : [],
+          fuelSheet && fuelRowsToMove.length ? read("D4:D", "UNFORMATTED_VALUE", fuelSheet) : [],
+        ]);
+        const savedPlot = parsePlotSheet(saved)[0];
+        if (!savedPlot) return false;
+        const totalValue = savedPlot.totalValue;
+        return savedPlot.code === input.nextCode && (savedPlot.spk ?? "") === input.spk
+          && savedPlot.pricePerHa === input.pricePerHa && savedPlot.area === input.area
+          && (!(priceChanged || areaChanged) || (typeof totalValue === "number" && Math.abs(totalValue - amount) <= Math.max(1e-7, amount * 1e-12)))
+          && (!mirrorRow || ((!codeChanged || savedMirror?.[1] === input.nextCode)
+            && (!spkChanged || String(savedMirror?.[0] ?? "") === input.spk)
+            && (!priceChanged || savedMirror?.[2] === input.pricePerHa)))
+          && fuelRowsToMove.every((row) => savedFuel[row - 4]?.[0] === input.nextCode);
+      };
+    } else if (input.kind === "delete-activity" && activity) {
+      if (JSON.stringify(activity) !== input.snapshot) return { ok: false, message: "Aktivitas sudah berubah. Muat ulang halaman sebelum menghapus." };
+      const row = activity.sourceRow;
+      const next = plot.activities.find(({ sourceRow }) => sourceRow > row)?.sourceRow;
+      let stockFormula: string | undefined;
+      if (next) {
+        const [formulaRow] = await read(`A${next}:L${next}`, "FORMULA");
+        const stock = formulaRow?.[9];
+        const legacy = `=IF(AND(G${next}="";I${next}="");"";J${next - 1}+G${next}-I${next})`;
+        if (typeof stock === "string" && stock.replaceAll(",", ";").replace(/\s/g, "") === legacy) {
+          const prior = `J${header + 2}:J${next - 1}`;
+          stockFormula = `=IF(AND(G${next}="";I${next}="");"";XLOOKUP(TRUE;ARRAYFORMULA(ISNUMBER(${prior}));${prior};0;0;-1)+N(G${next})-N(I${next}))`;
+          update(next - 1, 9, { formulaValue: stockFormula });
+        }
+      }
+      for (let column = 1; column < 12; column++) update(row - 1, column);
+      verify = async () => {
+        const [saved] = await read(`A${row}:L${row}`, "FORMULA");
+        if (!saved || saved.slice(1).some((value) => value != null && value !== "")) return false;
+        if (!next || !stockFormula) return true;
+        const [nextSaved] = await read(`A${next}:L${next}`, "FORMULA");
+        return String(nextSaved?.[9]).replaceAll(",", ";") === stockFormula;
+      };
+    } else if (input.kind === "edit" && activity) {
+      if (JSON.stringify(activity) !== input.snapshot) return { ok: false, message: "Aktivitas sudah berubah. Muat ulang halaman sebelum mengedit." };
+      if (input.close && latestDatedPlotActivity(plot.activities.filter(({ date }) => worksheet !== plot2026Worksheet || (date !== null && isPlot2026Date(date)))) !== activity) {
+        return { ok: false, message: "Ada aktivitas yang lebih baru. Muat ulang sebelum menutup petak." };
+      }
+      const draft = input.close ? { ...activityEditDraft(activity), workStatus: "Selesai" } : input.draft;
+      const plan = planActivityEdit(activity, draft, worksheet);
+      if (!plan.cells) return { ok: false, message: plan.error };
+      const { cells } = plan;
+      if (!cells.length) return { ok: true, message: "Tidak ada perubahan aktivitas." };
+      for (const { column, value, formula } of cells) {
+        update(activity.sourceRow - 1, column, formula ? { formulaValue: formula } : typeof value === "number" ? { numberValue: value } : value === null ? undefined : { stringValue: value });
+      }
+      if (cells.some(({ column }) => column === 1)) requests.push({ repeatCell: {
+        range: { sheetId, startRowIndex: activity.sourceRow - 1, endRowIndex: activity.sourceRow, startColumnIndex: 1, endColumnIndex: 2 },
+        cell: { userEnteredFormat: { numberFormat: { type: "DATE", pattern: "dd/mm/yyyy" } } },
+        fields: "userEnteredFormat.numberFormat",
+      } });
+      verify = async () => {
+        const range = `A${activity.sourceRow}:L${activity.sourceRow}`;
+        const [saved] = await read(range);
+        const [formulas] = cells.some(({ formula }) => formula) ? await read(range, "FORMULA") : [];
+        return Boolean(saved) && cells.every(({ column, value, formula }) => formula
+          ? String(formulas?.[column]).replaceAll(",", ";") === formula
+          : (saved?.[column] === "" ? null : saved?.[column] ?? null) === value);
+      };
+    } else if (input.kind === "delete") {
+      if (plot.sourceRow !== input.sourceRow) return { ok: false, message: "Posisi petak sudah berubah. Muat ulang daftar sebelum menghapus." };
+      const first = plot.spkSourceRow - 1;
+      const metadataRows = [plot.sourceRow - 1, plot.sourceRow, plot.sourceRow + 1, plot.sourceRow + 2, plot.sourceRow + 3];
+      if (first < plot.sourceRow - 1) metadataRows.push(first);
+      for (const row of metadataRows) update(row, 2);
+      // Leave the labels and row positions intact so the first block can still serve as the creation template.
+      const clear = (startRowIndex: number, endRowIndex: number, startColumnIndex: number, endColumnIndex: number) => {
+        requests.push({ updateCells: {
+          range: { sheetId, startRowIndex, endRowIndex, startColumnIndex, endColumnIndex },
+          rows: [], fields: "userEnteredValue",
+        } });
+      };
+      clear(header + 1, total, 1, 12);
+      clear(total, total + 1, 4, 10);
+      clear(average, average + 1, 4, 10);
+      verify = async () => {
+        const saved = await read(`A${first + 1}:L${average + 1}`, "FORMULA");
+        const blank = (value: unknown) => value == null || value === "";
+        return saved[header - first]?.[0] === "No" && saved[total - first]?.[0] === "Total"
+          && saved[average - first]?.[0] === "Rata-Rata"
+          && metadataRows.every((row) => blank(saved[row - first]?.[2]))
+          && saved.slice(header + 1 - first, total - first).every((row) => row.slice(1).every(blank))
+          && [total, average].every((row) => (saved[row - first] ?? []).slice(4, 10).every(blank));
+      };
+    } else {
+      return { ok: false, message: "Aktivitas sudah berubah. Muat ulang halaman." };
+    }
+    submitted = true;
+    await auth.request({ url: `${base}:batchUpdate`, method: "POST", data: { requests }, timeout: 15000, retry: false });
+    if (!await verify()) throw new Error("Readback mismatch");
+    if (input.kind === "metadata") {
+      console.info("plot_metadata_updated", { actor, worksheet, row: input.sourceRow, code: input.code });
+      return { ok: true, message: "Data petak berhasil diperbarui." };
+    }
+    console.info(input.kind === "edit" ? "plot_activity_updated" : input.kind === "delete-activity" ? "plot_activity_deleted" : "plot_deleted", { actor, worksheet, row: input.sourceRow, code: input.code });
+    return { ok: true, message: input.kind === "edit" ? (input.close ? "Petak berhasil ditutup." : "Aktivitas berhasil diperbarui.") : input.kind === "delete-activity" ? "Aktivitas berhasil dihapus." : `Petak ${plot.code} berhasil dihapus.` };
+  } catch {
+    return submitted
+      ? { ok: false, uncertain: true, message: "Hasil penyimpanan belum dapat dipastikan. Periksa data sebelum mencoba lagi." }
+      : { ok: false, message: "Perubahan belum disimpan. Periksa akses dan struktur worksheet petak." };
+  } finally {
+    saving = false;
+  }
 }
 
 export async function createPlotActivity(
@@ -127,21 +412,7 @@ export async function createPlotActivity(
         message: "Blok petak tidak ditemukan pada worksheet yang dikonfigurasi.",
       };
     const headerIndex = plotActivityHeaderIndex(plot.sourceRow);
-    const headers = [
-      "No",
-      "Tanggal",
-      "HM Awal",
-      "HM Akhir",
-      "HM Kerja (Jam)",
-      "Est. Jam Kerja",
-      "Pengisian Solar (L)",
-      "Pemakaian Solar per Jam (L/Hr)",
-      "Pemakaian Solar Riil (L)",
-      "Sisa/Stok Tangki (L)",
-      "Status Pekerjaan",
-      "Keterangan",
-    ];
-    if (!headers.every((header, col) => rows[headerIndex]?.[col] === header))
+    if (!plotActivityHeaders.every((header, col) => rows[headerIndex]?.[col] === header))
       return {
         ok: false,
         message: "Tabel aktivitas pada blok petak tidak sesuai format.",
@@ -175,7 +446,10 @@ export async function createPlotActivity(
     );
     const availableIndex = numberedIndexes.find(isEmptyActivity);
     const extendTable = availableIndex === undefined;
-    if (extendTable && isPlotFinished(plot.activities))
+    const latestStatus = latestDatedPlotActivity(plot.activities.filter(({ date, workStatus }) =>
+      workStatus && (worksheet !== plot2026Worksheet || (date !== null && isPlot2026Date(date))),
+    ))?.workStatus;
+    if ((extendTable || input.fuelPerHour !== null || input.status) && latestStatus === "Selesai")
       return {
         ok: false,
         message:
@@ -547,20 +821,6 @@ export async function createPlotBlock(
         ok: false,
         message: "Kode petak sudah terdaftar di sumber operasional.",
       };
-    const activityHeaders = [
-      "No",
-      "Tanggal",
-      "HM Awal",
-      "HM Akhir",
-      "HM Kerja (Jam)",
-      "Est. Jam Kerja",
-      "Pengisian Solar (L)",
-      "Pemakaian Solar per Jam (L/Hr)",
-      "Pemakaian Solar Riil (L)",
-      "Sisa/Stok Tangki (L)",
-      "Status Pekerjaan",
-      "Keterangan",
-    ];
     if (
       templateRows.length < 16 ||
       templateRows[0]?.[0] !== "No. SPK" ||
@@ -569,7 +829,7 @@ export async function createPlotBlock(
       templateRows[3]?.[0] !== "Total Nilai Petak" ||
       templateRows[4]?.[0] !== "Luas Petak" ||
       templateRows[5]?.[0] !== "Total Konsumsi Solar" ||
-      !activityHeaders.every(
+      !plotActivityHeaders.every(
         (header, column) => templateRows[7]?.[column] === header,
       ) ||
       templateRows[14]?.[0] !== "Total" ||

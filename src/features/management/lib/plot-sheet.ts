@@ -88,6 +88,11 @@ export function plotSheetRange(sheet: string, range: string) {
   return `'${sheet.replaceAll("'", "''")}'!${range}`;
 }
 
+export const plotActivityHeaders = [
+  "No", "Tanggal", "HM Awal", "HM Akhir", "HM Kerja (Jam)", "Est. Jam Kerja", "Pengisian Solar (L)",
+  "Pemakaian Solar per Jam (L/Hr)", "Pemakaian Solar Riil (L)", "Sisa/Stok Tangki (L)", "Status Pekerjaan", "Keterangan",
+];
+
 export function plotActivityHeaderIndex(plotSourceRow: number) {
   return plotSourceRow + 5;
 }
@@ -105,5 +110,5 @@ export function toPlotSheetStatus(status: string) {
     "Dalam pengerjaan": "Garap Petak Berlangsung",
     Selesai: "Garap Petak Selesai",
   };
-  return statuses[status] ?? null;
+  return Object.hasOwn(statuses, status) ? statuses[status] : null;
 }

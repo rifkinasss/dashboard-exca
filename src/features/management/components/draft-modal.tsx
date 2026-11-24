@@ -5,7 +5,7 @@ import { ArrowLeft, Eye, LoaderCircle, RotateCcw, Save, TriangleAlert, Trash2, X
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
-export function DraftModal({ title, description, dirty, wide = false, onClose, onReset, onPreview, children, preview, onSave, saving = false, hideWhileSaving = false, suspend = false, saveDisabled = false, className = "" }: {
+export function DraftModal({ title, description, dirty, wide = false, onClose, onReset, onPreview, children, preview, onSave, saving = false, hideWhileSaving = false, suspend = false, saveDisabled = false, saveLabel = "Simpan", className = "" }: {
   title: string;
   description: string;
   dirty: boolean;
@@ -20,6 +20,7 @@ export function DraftModal({ title, description, dirty, wide = false, onClose, o
   hideWhileSaving?: boolean;
   suspend?: boolean;
   saveDisabled?: boolean;
+  saveLabel?: string;
   className?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -46,7 +47,7 @@ export function DraftModal({ title, description, dirty, wide = false, onClose, o
     <form className="management-form" noValidate onSubmit={(event) => event.preventDefault()}>
       <header><div><h2 id="draft-modal-title">{title}</h2><p>{description}</p></div><Button type="button" variant="ghost" size="icon" aria-label="Tutup form" disabled={saving} onClick={requestClose}><X /></Button></header>
       <div className="management-form-content">{confirmClose ? <Alert>{showActionIcons && <TriangleAlert aria-hidden="true" />}<AlertTitle>Tutup tanpa menyimpan?</AlertTitle><AlertDescription>Perubahan pada draft ini akan hilang.</AlertDescription></Alert> : <>{children}{preview}</>}</div>
-      {confirmClose ? <footer><Button ref={cancelClose} type="button" variant="outline" onClick={() => setConfirmClose(false)}>{showActionIcons && <ArrowLeft data-icon="inline-start" aria-hidden="true" />}Lanjutkan mengisi</Button><Button type="button" variant={showActionIcons ? "destructive" : undefined} onClick={close}>{showActionIcons && <Trash2 data-icon="inline-start" aria-hidden="true" />}Tutup draft</Button></footer> : <footer><Button type="button" variant="outline" disabled={saving} onClick={onReset}>{showActionIcons && <RotateCcw aria-hidden="true" />}Reset draft</Button>{onPreview && <Button type="button" variant="outline" disabled={saving} onClick={onPreview}>{fuelPurchase && <Eye aria-hidden="true" />}Pratinjau</Button>}<Button type="button" variant="outline" disabled={saving} onClick={requestClose}>{showActionIcons && <X aria-hidden="true" />}Batal</Button><Button className={fuelPurchase ? "fuel-purchase-save" : undefined} type="button" disabled={!onSave || saving || saveDisabled} onClick={onSave}>{showActionIcons && (saving ? <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : <Save aria-hidden="true" />)}{saving ? "Menyimpan…" : onSave ? "Simpan" : "Simpan · belum tersedia"}</Button></footer>}
+      {confirmClose ? <footer><Button ref={cancelClose} type="button" variant="outline" onClick={() => setConfirmClose(false)}>{showActionIcons && <ArrowLeft data-icon="inline-start" aria-hidden="true" />}Lanjutkan mengisi</Button><Button type="button" variant={showActionIcons ? "destructive" : undefined} onClick={close}>{showActionIcons && <Trash2 data-icon="inline-start" aria-hidden="true" />}Tutup draft</Button></footer> : <footer><Button type="button" variant="outline" disabled={saving} onClick={onReset}>{showActionIcons && <RotateCcw aria-hidden="true" />}Reset draft</Button>{onPreview && <Button type="button" variant="outline" disabled={saving} onClick={onPreview}>{fuelPurchase && <Eye aria-hidden="true" />}Pratinjau</Button>}<Button type="button" variant="outline" disabled={saving} onClick={requestClose}>{showActionIcons && <X aria-hidden="true" />}Batal</Button><Button className={fuelPurchase ? "fuel-purchase-save" : undefined} type="button" disabled={!onSave || saving || saveDisabled} onClick={onSave}>{showActionIcons && (saving ? <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : <Save aria-hidden="true" />)}{saving ? "Menyimpan…" : onSave ? saveLabel : "Simpan · belum tersedia"}</Button></footer>}
     </form>
   </dialog>;
 }

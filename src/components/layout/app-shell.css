@@ -174,8 +174,8 @@
 /* Management forms keep their actions and identity visible while long fields scroll. */
 .management-form-dialog { width: min(560px, calc(100vw - 32px)); height: min(88dvh, 800px); max-height: none; overflow: hidden; }
 .management-form-dialog.is-wide { width: min(780px, calc(100vw - 32px)); }
-.management-form-dialog.spk-document-dialog { height: auto; max-height: calc(100dvh - 24px); }
-.spk-document-dialog .management-form { height: auto; max-height: calc(100dvh - 24px); }
+.management-form-dialog.spk-document-dialog, .management-form-dialog.plot-action-dialog { height: auto; max-height: calc(100dvh - 24px); }
+.spk-document-dialog .management-form, .plot-action-dialog .management-form { height: auto; max-height: calc(100dvh - 24px); }
 .spk-document-dialog .management-form-content { flex: 0 1 auto; gap: 12px; padding-block: 14px; }
 .management-form { display: flex; height: 100%; max-height: 100%; flex-direction: column; gap: 0; padding: 0; }
 .management-form > header { position: sticky; top: 0; z-index: 1; flex: none; padding: 18px 22px 14px; background: var(--surface); }
@@ -276,6 +276,12 @@
 .directory-row-actions button { white-space: nowrap; }
 .directory-row-actions .plot-detail-link { color: var(--primary-hover); background: var(--primary-soft); border-color: #fed7aa; }
 .directory-row-actions .plot-detail-link:hover { background: #ffedd5; }
+[data-color-mode="dark"] .directory-row-actions .plot-detail-link { color: color-mix(in srgb, var(--primary), white 65%); border-color: currentColor; }
+[data-color-mode="dark"] .directory-row-actions .plot-detail-link:hover { background: color-mix(in srgb, var(--primary-soft), white 8%); }
+[data-color-mode="dark"] .directory-row-actions .plot-detail-link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+[data-color-mode="dark"] .plot-delete-action { color: #fda4af; background: #4c2435; border-color: #fb7185; }
+[data-color-mode="dark"] .plot-delete-action:hover { background: #64283d; }
+[data-color-mode="dark"] .plot-delete-action:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .directory-table-panel [data-slot="table"] { min-width: 880px; }
 .activity-page { max-width: 1560px; }
 .activity-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin: 10px 0 22px; }
@@ -306,7 +312,9 @@
 .finance-record-filters { display: grid; grid-template-columns: minmax(200px, 1.5fr) repeat(2, minmax(150px, 1fr)) auto; align-items: end; gap: 10px; margin-bottom: 16px; }
 .finance-record-filters label { display: grid; min-width: 0; gap: 6px; color: var(--body); font-size: 13px; font-weight: 700; }
 .finance-record-filters input, .finance-record-filters select, .finance-record-filters button { width: 100%; min-width: 0; height: 40px; }
-.finance-record-filters select { padding: 0 32px 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--heading); font-size: 13px; }
+.finance-record-filters select { appearance: none; padding: 0 36px 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--heading); font-size: 13px; }
+.finance-filter-select { position: relative; }
+.finance-filter-select svg { position: absolute; inset-inline-end: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--muted-foreground); pointer-events: none; }
 .finance-record-filters button { width: auto; }
 .finance-record-note { margin: 12px 0 0; color: var(--muted-foreground); font-size: 13px; line-height: 1.55; }
 .finance-draft-summary { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
@@ -318,9 +326,15 @@
 .activity-table { box-shadow: none; }
 .activity-table [data-slot="table"] { min-width: 860px; }
 .activity-table [data-slot="table-head"], .activity-table [data-slot="table-cell"] { padding: 12px; font-size: 13px; }
-.activity-status { display: inline-flex; padding: 4px 9px; border-radius: 999px; background: #f1f5f9; color: var(--body); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.activity-table .activity-actions-heading { text-align: center; }
+.activity-table .activity-row-actions { justify-content: center; flex-wrap: nowrap; }
+.activity-status { display: inline-flex; padding: 4px 9px; border-radius: 999px; background: var(--muted); color: var(--body); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.activity-status[data-status="started"] { background: #fff7ed; color: #9a3412; }
 .activity-status[data-status="complete"] { background: #eaf7ee; color: #166534; }
-.activity-status[data-status="progress"] { background: var(--primary-soft); color: var(--primary-hover); }
+.activity-status[data-status="progress"] { background: #eff6ff; color: #1e40af; }
+[data-color-mode="dark"] .activity-status[data-status="started"] { background: #493026; color: #fed7aa; }
+[data-color-mode="dark"] .activity-status[data-status="complete"] { background: #1c392d; color: #bbf7d0; }
+[data-color-mode="dark"] .activity-status[data-status="progress"] { background: #243755; color: #bfdbfe; }
 .activity-detail-date { margin: 5px 0 0; color: var(--muted-foreground); font-size: 13px; }
 .activity-detail-overview { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 0; color: var(--muted-foreground); font-size: 13px; }
 .activity-detail-section { padding: 16px 0; border-top: 1px solid var(--border); }
@@ -431,6 +445,7 @@
 .plot-purchase-table [data-slot="table"] { min-width: 620px; }
 .plot-history-table [data-slot="table-head"] { font-size: 13px; }
 .plot-history-table [data-slot="table-cell"] { font-size: 13px; }
+.plot-history-table .directory-row-actions { flex-wrap: nowrap; }
 .plot-history-table .fuel-estimate-label { font-size: 12px; }
 .plot-activity-status { height: auto; padding: 4px 8px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .plot-activity-status.is-started { border-color: #fed7aa; background: #fff7ed; color: #9a3412; }
@@ -577,7 +592,7 @@
 .plot-create-preview th, .plot-create-preview td { padding: 7px 10px; border: 1px solid var(--border); }
 .plot-create-preview th { width: 46%; background: var(--background); color: var(--body); text-align: left; font-weight: 650; }
 .plot-create-preview td { color: var(--heading); text-align: right; font-weight: 650; }
-.plot-create-preview tr:nth-child(4) td { background: #dcfce7; }
+.plot-create-preview tr:nth-child(4) td { background: var(--primary-soft); }
 .plot-create-preview tr:last-child td { color: var(--muted-foreground); font-weight: 500; }
 .plot-create-preview > p { margin: 0; padding: 8px 10px; line-height: 1.4; }
 @media (max-width: 620px) { .management-form-dialog.plot-create-dialog { inset: 50% auto auto 50%; width: min(520px, calc(100vw - 24px)); height: auto; max-height: calc(100dvh - 24px); transform: translate(-50%, -50%); } }

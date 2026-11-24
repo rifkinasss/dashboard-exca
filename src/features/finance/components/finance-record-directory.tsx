@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Banknote, ClipboardList, Eye, Fuel, RotateCcw, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Banknote, ChevronDown, ClipboardList, Eye, Fuel, RotateCcw, Search } from "lucide-react";
 import { flexRender, getCoreRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type SortingState } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +49,28 @@ export function FinanceRecordDirectory({ records }: { records: FinanceRecord[] }
       <div><span className="activity-summary-icon"><Fuel aria-hidden="true" /></span><span><small>Total biaya solar</small><strong>{currency(fuelCost)}</strong><em>{costCount} dari {visible.length} snapshot sumber</em></span></div>
     </section>
     <section className="activity-list"><div className="activity-list-heading"><div><h2>Daftar keuangan</h2><p>Nilai merupakan snapshot per SPK dan petak, bukan transaksi bertanggal.</p></div><span>{visible.length} catatan</span></div>
-      <div className="finance-record-filters"><label className="activity-search">Pencarian<div><Search aria-hidden="true" /><Input value={query} onChange={(event) => update(setQuery, event.target.value)} placeholder="Cari SPK atau kode petak" /></div></label><label>Kode petak<select value={plot} onChange={(event) => update(setPlot, event.target.value)}><option value="">Semua petak</option>{plotCodes.map((code) => <option key={code}>{code}</option>)}</select></label><label>Nomor SPK<select value={spk} onChange={(event) => update(setSpk, event.target.value)}><option value="">Semua SPK</option>{spkNumbers.map((number) => <option key={number}>{number}</option>)}</select></label><Button variant="outline" onClick={reset} disabled={!query && !plot && !spk}><RotateCcw data-icon="inline-start" aria-hidden="true" />Reset</Button></div>
+      <div className="finance-record-filters">
+        <label className="activity-search">Pencarian<div><Search aria-hidden="true" /><Input value={query} onChange={(event) => update(setQuery, event.target.value)} placeholder="Cari SPK atau kode petak" /></div></label>
+        <label>Kode petak
+          <span className="finance-filter-select">
+            <select value={plot} onChange={(event) => update(setPlot, event.target.value)}>
+              <option value="">Semua petak</option>
+              {plotCodes.map((code) => <option key={code}>{code}</option>)}
+            </select>
+            <ChevronDown aria-hidden="true" />
+          </span>
+        </label>
+        <label>Nomor SPK
+          <span className="finance-filter-select">
+            <select value={spk} onChange={(event) => update(setSpk, event.target.value)}>
+              <option value="">Semua SPK</option>
+              {spkNumbers.map((number) => <option key={number}>{number}</option>)}
+            </select>
+            <ChevronDown aria-hidden="true" />
+          </span>
+        </label>
+        <Button variant="outline" onClick={reset} disabled={!query && !plot && !spk}><RotateCcw data-icon="inline-start" aria-hidden="true" />Reset</Button>
+      </div>
       <div className="directory-table-panel activity-table"><Table><TableHeader>{table.getHeaderGroups().map((group) => <TableRow key={group.id}>{group.headers.map((header) => { const direction = header.column.getIsSorted(); const Icon = direction === "asc" ? ArrowUp : direction === "desc" ? ArrowDown : ArrowUpDown; return <TableHead key={header.id} aria-sort={direction === "asc" ? "ascending" : direction === "desc" ? "descending" : undefined}>{header.column.getCanSort() ? <button type="button" className="directory-sort" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}<Icon size={13} aria-hidden="true" /></button> : flexRender(header.column.columnDef.header, header.getContext())}</TableHead>; })}</TableRow>)}</TableHeader><TableBody>{table.getRowModel().rows.map((row) => <TableRow key={row.id}>{row.getVisibleCells().map((cell) => <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>)}</TableRow>)}</TableBody></Table>
         {!visible.length && <div className="directory-empty"><strong>{records.length ? "Tidak ada data yang cocok" : "Belum ada data keuangan"}</strong><p>{records.length ? "Ubah pencarian atau filter." : "Data keuangan yang tersedia akan tampil di sini."}</p></div>}
         <footer className="directory-pagination"><span>Halaman {pagination.pageIndex + 1} dari {Math.max(1, table.getPageCount())} · {visible.length} catatan</span><div><Button variant="outline" size="sm" disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()}>Sebelumnya</Button><Button variant="outline" size="sm" disabled={!table.getCanNextPage()} onClick={() => table.nextPage()}>Berikutnya</Button></div></footer>

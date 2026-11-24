@@ -7,6 +7,8 @@ import { financeWorksheetName } from "../../types";
 import { createFinanceReader } from "./google-finance";
 
 let source: (() => Promise<DashboardData>) | undefined;
+export function invalidateFinanceData() { source = undefined; }
+
 export async function getFinanceData(): Promise<DashboardData | null> {
   const worksheet = financeWorksheetName(process.env.GOOGLE_FINANCE_SHEET_NAME);
   try {

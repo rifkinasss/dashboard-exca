@@ -26,15 +26,17 @@ export function buildManagementDirectory(
   for (const issue of view.issues) issuesByRow.set(issue.source.row, [...(issuesByRow.get(issue.source.row) ?? []), issue]);
   const sheetPlots = new Map((options.sheetPlots ?? []).map((plot) => [plot.code.toLocaleUpperCase("id-ID"), plot]));
 
+  const sameWorksheet = Boolean(options.sheetPlotWorksheet && options.sheetPlotWorksheet === options.operationWorksheet);
+
   const plots = view.inventory.map((plot) => {
     const sheetPlot = sheetPlots.get(plot.code.toLocaleUpperCase("id-ID"));
     const rows = view.validatedRecords.filter(({ record }) => record.plotCode === plot.code);
     const accepted = rows.filter((row) => row.duplicateOf === null);
-    const blockActivities = (sheetPlot?.activities ?? []).filter((activity) => !rows.some(({ record }) => validDate(record.date) && record.date === activity.date && record.hmStart === activity.hmStart && record.hmEnd === activity.hmEnd && record.fuelRefill === activity.fuelRefill));
+    const blockActivities = (sheetPlot?.activities ?? []).filter((activity) => !rows.some(({ record }) => sameWorksheet ? record.source.row === activity.sourceRow : validDate(record.date) && record.date === activity.date && record.hmStart === activity.hmStart && record.hmEnd === activity.hmEnd && record.fuelRefill === activity.fuelRefill));
     const baseRefill = calculateKpis(view.filteredValidatedRecords.filter(({ record }) => record.plotCode === plot.code)).refill;
     const blockRefills = blockActivities.filter((activity) => activity.fuelRefill !== null);
     const refill = baseRefill === null ? (blockRefills.length ? blockRefills.reduce((sum, activity) => sum + activity.fuelRefill!, 0) : null) : baseRefill + blockRefills.reduce((sum, activity) => sum + activity.fuelRefill!, 0);
-    const state = derivePlotState(rows, false, blockActivities);
+    const state = derivePlotState(rows, sameWorksheet, blockActivities);
     const spks = sheetPlot?.spk ? [sheetPlot.spk] : [...new Set(accepted.map(({ record }) => record.spkNumber).filter((value): value is string => value !== null))].sort();
     const issues = view.issues.filter((issue) => {
       const sourceRecord = recordsByRow.get(issue.source.row);
@@ -54,6 +56,10 @@ export function buildManagementDirectory(
       areaRequiresReview: sheetPlot?.area !== null && sheetPlot?.area !== undefined ? false : plot.areaRequiresReview,
       operationalPricePerHa: sheetPlot?.pricePerHa ?? null,
       usesOperationalPrice: Boolean(sheetPlot),
+      sheetSourceRow: sheetPlot?.sourceRow ?? null,
+      sheetSpk: sheetPlot?.spk ?? null,
+      sheetArea: sheetPlot?.area ?? null,
+      sheetFuelConsumption: sheetPlot?.totalFuelConsumption ?? null,
       status: state.status,
       statusAmbiguous: state.statusAmbiguous,
       startDate: state.startDate,
@@ -71,6 +77,7 @@ export function buildManagementDirectory(
       areaSourceRows: sheetPlot && sheetPlot.area !== null ? [{ worksheet: options.sheetPlotWorksheet ?? "Okt 2026 - testing", row: sheetPlot.areaSourceRow }] : plot.areaMetadata.sourceRows,
       activities: [...rows.map(({ record, duplicateOf, invalidFields }) => ({
         sourceRow: record.source.row,
+        sheetActivity: sameWorksheet ? sheetPlot?.activities.find(({ sourceRow }) => sourceRow === record.source.row) ?? null : null,
         date: validDate(record.date) ? record.date : null,
         hmStart: record.hmStart,
         hmEnd: record.hmEnd,
@@ -84,7 +91,7 @@ export function buildManagementDirectory(
         duplicateOf,
         invalidFields,
         issues: (issuesByRow.get(record.source.row) ?? []).map(({ message }) => message),
-      })), ...blockActivities.map((activity) => ({ ...activity, duplicateOf: null, invalidFields: [] as string[], issues: [] as string[] }))].sort((a, b) => (a.date ?? "9999-99-99").localeCompare(b.date ?? "9999-99-99") || a.sourceRow - b.sourceRow),
+      })), ...blockActivities.map((activity) => ({ ...activity, sheetActivity: activity, duplicateOf: null, invalidFields: [] as string[], issues: [] as string[] }))].sort((a, b) => (a.date ?? "9999-99-99").localeCompare(b.date ?? "9999-99-99") || a.sourceRow - b.sourceRow),
       fuelRefills: rows.filter(({ record }) => record.cellStates.fuelRefill !== "missing").map(({ record, duplicateOf, invalidFields }) => ({
         sourceRow: record.source.row,
         activityDate: validDate(record.date) ? record.date : null,
@@ -99,14 +106,20 @@ export function buildManagementDirectory(
   });
   const knownCodes = new Set(plots.map((plot) => plot.code.toLocaleUpperCase("id-ID")));
   for (const plot of options.sheetPlots ?? []) if (!knownCodes.has(plot.code.toLocaleUpperCase("id-ID"))) {
+    const state = derivePlotState([], true, plot.activities);
     plots.push({
       id: legacyPlotRouteId(plot.code), code: plot.code, spks: plot.spk ? [plot.spk] : [], spkAssociations: plot.spk ? [{ number: plot.spk, sourceRows: [plot.spkSourceRow] }] : [], spkSourceRows: plot.spk ? [plot.spkSourceRow] : [], plotCodeSourceRows: [plot.sourceRow],
-      area: plot.area, areaRequiresReview: false, status: null, statusAmbiguous: false, startDate: "", completionDate: "",
+      area: plot.area, areaRequiresReview: false, status: state.status, statusAmbiguous: state.statusAmbiguous, startDate: state.startDate, completionDate: state.completionDate,
       operationalPricePerHa: plot.pricePerHa,
       usesOperationalPrice: true,
-      lastActivityDate: "", startEventCount: 0, campaignRequiresReview: false, activityCount: 0, undatedCount: 0,
+      sheetSourceRow: plot.sourceRow,
+      sheetSpk: plot.spk,
+      sheetArea: plot.area,
+      sheetFuelConsumption: plot.totalFuelConsumption,
+      lastActivityDate: state.latestActivityDate, startEventCount: state.startEventCount, campaignRequiresReview: state.startEventCount > 1,
+      activityCount: plot.activities.filter(({ date }) => validDate(date)).length, undatedCount: plot.activities.filter(({ date }) => !validDate(date)).length,
       hours: null, fuel: null, refill: plot.activities.some((activity) => activity.fuelRefill !== null) ? plot.activities.reduce((sum, activity) => sum + (activity.fuelRefill ?? 0), 0) : null, efficiency: null, sourceRows: [], areaSourceRows: plot.area === null ? [] : [{ worksheet: options.sheetPlotWorksheet ?? "Okt 2026 - testing", row: plot.areaSourceRow }],
-      activities: plot.activities.map((activity) => ({ ...activity, duplicateOf: null, invalidFields: [] as string[], issues: [] as string[] })), fuelRefills: [], issues: [],
+      activities: plot.activities.map((activity) => ({ ...activity, sheetActivity: activity, duplicateOf: null, invalidFields: [] as string[], issues: [] as string[] })), fuelRefills: [], issues: [],
     });
   }
 
