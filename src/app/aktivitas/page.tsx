@@ -3,4 +3,4 @@ import { ManagementGate } from "@/features/auth/components/management-gate";
 
 export const metadata = { title: "Aktivitas Operasional" };
 
-export default function ActivityPage() { return <ManagementGate title="Aktivitas Operasional"><ManagementRecordRoute kind="activity" /></ManagementGate>; }
+export default function ActivityPage() { return <ManagementGate layout="activity" title="Aktivitas Operasional"><ManagementRecordRoute kind="activity" /></ManagementGate>; }

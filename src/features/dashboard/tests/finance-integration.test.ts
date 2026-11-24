@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { allOverviewColumns, financeColumns, financeWorksheetName, type RawFinanceRow } from "../../finance/types";
+import { syncAnnualFinance } from "../../finance/lib/sync-annual-finance";
 import { normalizeFinance } from "../../finance/lib/normalize-finance";
 import { relateFinance } from "../../finance/lib/relationships";
 import { allocateRevenue } from "../../finance/lib/revenue-allocation";
@@ -217,4 +218,20 @@ test("monthly estimates sum selected daily values without inventing missing cost
     { date: "2026-11", gross: 400, cost: 50 },
   ]);
   assert.deepEqual(groupMonthlyEstimates([]), []);
+});
+
+test("annual edits refresh finance totals without guessing when a plot code is ambiguous", () => {
+  const snapshot = {
+    worksheet: "Overview Finance",
+    rows: [finance("A", "P"), finance("B", "Q"), [], ["Total"]],
+  };
+  const plot = { code: "p", spk: "A-NEW", area: 6, pricePerHa: 2000, totalValue: 5000, totalFuelConsumption: 12 };
+  const plots = [plot, { ...plot, code: "Q" }, { ...plot, code: "q" }];
+  const { records } = normalizeFinance(syncAnnualFinance(snapshot, plots).rows);
+  assert.deepEqual(
+    records.map(({ spk, area, pricePerHa, grossValue, fuelRefill, fuelCost, sourceNetValue }) =>
+      [spk, area, pricePerHa, grossValue, fuelRefill, fuelCost, sourceNetValue]),
+    [["A-NEW", 6, 2000, 12000, 12, 1200, 10800], ["B", 5, 1000, 5000, 10, 1000, 4000]],
+  );
+  assert.deepEqual(syncAnnualFinance(snapshot, [{ ...plot, totalFuelConsumption: null }]).rows[0].slice(7), [null, null, 12000, null]);
 });

@@ -14,5 +14,5 @@ async function LoginContent({ searchParams }: LoginPageProps) {
 }
 
 export default function LoginPage(props: LoginPageProps) {
-  return <Suspense fallback={<DashboardLoading layout="settings" />}><LoginContent {...props} /></Suspense>;
+  return <Suspense fallback={<DashboardLoading layout="login" />}><LoginContent {...props} /></Suspense>;
 }

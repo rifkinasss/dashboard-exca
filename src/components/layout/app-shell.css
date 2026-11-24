@@ -329,10 +329,10 @@
 .activity-table .activity-actions-heading { text-align: center; }
 .activity-table .activity-row-actions { justify-content: center; flex-wrap: nowrap; }
 .activity-status { display: inline-flex; padding: 4px 9px; border-radius: 999px; background: var(--muted); color: var(--body); font-size: 12px; font-weight: 600; white-space: nowrap; }
-.activity-status[data-status="started"] { background: #fff7ed; color: #9a3412; }
+.activity-status[data-status="started"] { background: #fef2f2; color: #991b1b; }
 .activity-status[data-status="complete"] { background: #eaf7ee; color: #166534; }
 .activity-status[data-status="progress"] { background: #eff6ff; color: #1e40af; }
-[data-color-mode="dark"] .activity-status[data-status="started"] { background: #493026; color: #fed7aa; }
+[data-color-mode="dark"] .activity-status[data-status="started"] { background: #4c2435; color: #fda4af; }
 [data-color-mode="dark"] .activity-status[data-status="complete"] { background: #1c392d; color: #bbf7d0; }
 [data-color-mode="dark"] .activity-status[data-status="progress"] { background: #243755; color: #bfdbfe; }
 .activity-detail-date { margin: 5px 0 0; color: var(--muted-foreground); font-size: 13px; }
@@ -448,7 +448,8 @@
 .plot-history-table .directory-row-actions { flex-wrap: nowrap; }
 .plot-history-table .fuel-estimate-label { font-size: 12px; }
 .plot-activity-status { height: auto; padding: 4px 8px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.plot-activity-status.is-started { border-color: #fed7aa; background: #fff7ed; color: #9a3412; }
+.plot-activity-status.is-started { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+[data-color-mode="dark"] .plot-activity-status.is-started { border-color: #fb7185; background: #4c2435; color: #fda4af; }
 .plot-activity-status.is-progress { border-color: #bfdbfe; background: #eff6ff; color: #1e40af; }
 .plot-activity-status.is-completed { border-color: #bbdfc5; background: #edf8ef; color: #166534; }
 .plot-activity-notes { min-width: 150px; max-width: 280px; white-space: normal; overflow-wrap: anywhere; }

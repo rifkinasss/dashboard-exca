@@ -26,7 +26,7 @@ import { RecordDirectory, type ManagedRecord, type ManagedRecordKind } from "./r
 const allDates = { ...defaultFilters, startDate: "", endDate: "" };
 
 function ManagementRecordRoute({ kind }: { kind: ManagedRecordKind }) {
-  return <Suspense fallback={<DashboardLoading layout="directory" />}><RecordPageContent kind={kind} /></Suspense>;
+  return <Suspense fallback={<DashboardLoading layout={kind === "fuel" ? "solar" : kind} />}><RecordPageContent kind={kind} /></Suspense>;
 }
 
 async function RecordPageContent({ kind }: { kind: ManagedRecordKind }) {

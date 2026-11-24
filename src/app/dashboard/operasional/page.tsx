@@ -8,7 +8,7 @@ import { defaultFilters } from "@/features/dashboard/lib/overview";
 import { plot2026Worksheet } from "@/features/management/lib/plot-sheet";
 import { plotWorksheetName, readPlotSheet } from "@/features/management/data/server/plot-sheet-source";
 import { getPlotPrices } from "@/features/management/data/server/plot-price-source";
-import Loading from "../../loading";
+import Loading from "./loading";
 
 export const metadata = { title: "Dashboard Operasional" };
 

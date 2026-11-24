@@ -31,7 +31,7 @@ export async function savePlot(input: unknown) {
   if (pricePerHa.state !== "valid" || !Number.isSafeInteger(pricePerHa.value) || pricePerHa.value <= 0) return { ok: false, message: "Harga per hektar harus berupa Rupiah bulat lebih besar dari nol." };
   if (!Number.isFinite(pricePerHa.value * area.value)) return { ok: false, message: "Total nilai petak di luar rentang angka yang dapat disimpan." };
   const result = await createPlotBlock({ code, spk, pricePerHa: pricePerHa.value, area: area.value }, email);
-  if (result.ok || result.uncertain) { invalidateDashboardData(); revalidatePath("/petak"); }
+  if (result.ok || result.uncertain) refreshPlotPages();
   return result;
 }
 
@@ -45,7 +45,7 @@ export async function savePlotSpk(input: unknown) {
   if (!/^[\p{L}\p{N}][\p{L}\p{N} /._-]{0,49}$/u.test(code)) return { ok: false, message: "Kode petak tidak valid." };
   if (!/^[\p{L}\p{N}][\p{L}\p{N} /._-]{0,79}$/u.test(spk)) return { ok: false, message: "Nomor SPK wajib diisi dan tidak valid." };
   const result = await addPlotSpk({ code, spk }, email);
-  if (result.ok || result.uncertain) { invalidateDashboardData(); revalidatePath("/petak"); revalidatePath("/spk"); revalidatePath("/keuangan"); }
+  if (result.ok || result.uncertain) refreshPlotPages();
   return result;
 }
 
@@ -83,6 +83,8 @@ export async function savePlotActivity(input: unknown) {
 
 function refreshPlotPages() {
   invalidateDashboardData();
+  invalidateFinanceData();
+  revalidatePath("/dashboard/keuangan");
   revalidatePath("/petak");
   revalidatePath("/petak/[plotId]", "page");
   revalidatePath("/aktivitas");
@@ -164,11 +166,9 @@ export async function updatePlotMetadata(input: unknown) {
   }, email);
   if (result.ok || result.uncertain) {
     invalidatePlotPrices();
-    invalidateFinanceData();
     invalidateFuelWithdrawals();
     refreshPlotPages();
     revalidatePath("/solar");
-    revalidatePath("/dashboard/keuangan");
     revalidatePath("/pengaturan");
   }
   return { ...result, plotId: result.ok ? legacyPlotRouteId(code) : undefined };

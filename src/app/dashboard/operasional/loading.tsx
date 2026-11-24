@@ -1,5 +1,5 @@
 import { DashboardLoading } from "@/components/layout/dashboard-loading";
 
 export default function Loading() {
-  return <DashboardLoading section="operasional" />;
+  return <DashboardLoading layout="operational" />;
 }

@@ -39,5 +39,5 @@ async function PlotContent({ params }: { params: Promise<{ plotId: string }> }) 
 }
 
 export default function PlotRoute({ params }: { params: Promise<{ plotId: string }> }) {
-  return <ManagementGate title="Petak Lahan"><Suspense fallback={<DashboardLoading layout="detail" />}><PlotContent params={params} /></Suspense></ManagementGate>;
+  return <ManagementGate layout="detail" title="Petak Lahan"><Suspense fallback={<DashboardLoading layout="detail" />}><PlotContent params={params} /></Suspense></ManagementGate>;
 }

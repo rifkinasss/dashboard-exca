@@ -27,4 +27,4 @@ async function SolarContent() {
   return <div className="directory-main">{fuelSheetConfig(process.env).testing && <p className="directory-notice" role="status">Mode pengujian: pembelian dan harga solar memakai worksheet uji. Dashboard lokal juga menggunakan data pembelian uji.</p>}<FuelWithdrawalDirectory data={data} priceCatalog={priceCatalog} authReady={authReady} writerReady={authReady && withdrawalWriterReady()} priceWriterReady={authReady && fuelPriceWriterReady()} userEmail={userEmail} operatorEmail={operatorEmail} /></div>;
 }
 
-export default function SolarPage() { return <ManagementGate title="Pembelian Solar"><Suspense fallback={<DashboardLoading layout="solar" />}><SolarContent /></Suspense></ManagementGate>; }
+export default function SolarPage() { return <ManagementGate layout="solar" title="Pembelian Solar"><Suspense fallback={<DashboardLoading layout="solar" />}><SolarContent /></Suspense></ManagementGate>; }

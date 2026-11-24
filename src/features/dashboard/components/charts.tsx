@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { OperationalChartPlaceholders } from "@/components/layout/dashboard-loading";
 import { BarChart3, ChartNoAxesCombined, Settings, Hourglass, Fuel } from "lucide-react";
 import {
   Bar, BarChart, CartesianGrid, LabelList, Line, LineChart,
@@ -57,9 +57,7 @@ export function Charts({ summary, rows, inventory, summaryPanel, withdrawals }: 
   if (!mounted) {
     return (
       <div className="chart-grid" role="status" aria-label="Menyiapkan grafik">
-        {Array.from({ length: 5 }, (_, index) => <section className="panel chart-panel" key={index} aria-hidden="true">
-          <Skeleton className="page-skeleton-card-label" /><Skeleton className="page-skeleton-chart-body" />
-        </section>)}
+        <OperationalChartPlaceholders />
         {summaryPanel}
       </div>
     );

@@ -54,5 +54,5 @@ async function Content({ kind }: { kind: "petak" | "spk" }) {
 }
 
 export function ManagementPage({ kind }: { kind: "petak" | "spk" }) {
-  return <Suspense fallback={<DashboardLoading layout="directory" />}><Content kind={kind} /></Suspense>;
+  return <Suspense fallback={<DashboardLoading layout={kind === "petak" ? "plots" : "spk"} />}><Content kind={kind} /></Suspense>;
 }

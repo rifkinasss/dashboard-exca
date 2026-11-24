@@ -3,6 +3,9 @@ import { createDashboardSource } from "../../../dashboard/data/server/dashboard-
 import { readSourceConfig, type GoogleSheetsConfig } from "../../../dashboard/data/server/config";
 import { safeSyncError } from "../../../dashboard/data/server/sync-error";
 import type { DashboardData } from "../../../dashboard/data/source-types";
+import { plotWorksheetName, readPlotSheet } from "../../../management/data/server/plot-sheet-source";
+import { plot2026Worksheet } from "../../../management/lib/plot-sheet";
+import { syncAnnualFinance } from "../../lib/sync-annual-finance";
 import { financeWorksheetName } from "../../types";
 import { createFinanceReader } from "./google-finance";
 
@@ -15,7 +18,15 @@ export async function getFinanceData(): Promise<DashboardData | null> {
     const config = readSourceConfig(process.env);
     if (config.source === "mock") return null;
     const financeConfig: GoogleSheetsConfig = { ...config, worksheet };
-    source ??= createDashboardSource(financeConfig, createFinanceReader(financeConfig));
+    if (!source) {
+      const readFinance = createFinanceReader(financeConfig);
+      const useAnnualPlots = worksheet === "Overview Finance" && plotWorksheetName(process.env) === plot2026Worksheet;
+      source = createDashboardSource(financeConfig, async () => {
+        if (!useAnnualPlots) return readFinance();
+        const [snapshot, plots] = await Promise.all([readFinance(), readPlotSheet()]);
+        return syncAnnualFinance(snapshot, plots);
+      });
+    }
     return await source();
   } catch (error) {
     return { kind: "error", status: { source: "google-sheets", state: "failed", worksheet, lastSuccessAt: null, evaluatedAt: new Date().toISOString(), ttlSeconds: 60, error: safeSyncError(error) } };

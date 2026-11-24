@@ -1061,7 +1061,6 @@ tbody tr:hover {
 thead th { color: #162033; background: #ffeadc; font-weight: 600; }
 tbody tr:hover { background: #fff7f1; }
 .status-label { border-radius: 14px; }
-.status-label[data-status="Mulai pengerjaan"] { background: #ff8b42; color: #481a05; }
 .status-label[data-status="Dalam pengerjaan"] { background: #ffd184; color: #573000; }
 .status-label[data-status="Selesai"] { background: #a5d7a0; color: #174522; }
 .summary-panel .quality-filters { padding-inline: 19px; }
@@ -1522,7 +1521,8 @@ th, td { border-bottom-color: var(--border); }
 tbody th { color: var(--heading); }
 tbody tr:hover { background: #FFFAF5; }
 .status-label { border-radius: 8px; }
-.status-label[data-status="Mulai pengerjaan"] { background: #FFF0E5; color: #9A3412; }
+.status-label[data-status="Mulai pengerjaan"] { background: #fef2f2; color: #991b1b; }
+[data-color-mode="dark"] .status-label[data-status="Mulai pengerjaan"] { background: #4c2435; color: #fda4af; }
 .status-label[data-status="Dalam pengerjaan"] { background: #FEF3C7; color: #92400E; }
 .status-label[data-status="Selesai"] { background: #DCFCE7; color: #166534; }
 .status-label[data-status="Ditunda"] { background: #FFEDD5; color: #9A3412; }
@@ -1876,20 +1876,23 @@ tbody tr:hover { background: #FFFAF5; }
 .page-skeleton-title { width: min(320px, 80%); height: 32px; }
 .page-skeleton-subtitle { width: min(420px, 90%); height: 16px; }
 .page-skeleton-panel { min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
-.page-skeleton-filters, .page-skeleton-cards, .page-skeleton-charts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.page-skeleton-input { height: 42px; }
-.page-skeleton-card { display: grid; align-content: start; gap: 14px; min-height: 130px; }
-.page-skeleton-card-label { width: min(180px, 70%); height: 18px; }
-.page-skeleton-card-value { width: min(140px, 65%); height: 30px; }
-.page-skeleton-card-note { width: min(170px, 80%); height: 14px; }
-.page-skeleton-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.page-skeleton-chart { display: grid; gap: 18px; }
-.page-skeleton-chart-body { width: 100%; height: 220px; margin-top: 16px; }
+.page-skeleton-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(135px, 100%), 1fr)); gap: 10px; }
+.page-skeleton-input { height: 38px; }
+.page-skeleton-card { display: grid; align-content: start; gap: 6px; min-height: 92px; padding: 12px; }
+.page-skeleton .kpi-card, .page-skeleton .activity-summary > .page-skeleton-card { display: grid; align-content: center; }
+.page-skeleton .kpi-card { gap: 5px; min-height: 74px; }
+.page-skeleton .filter-toolbar-row > .all-filters-trigger { width: 110px; margin-top: 19px; }
+.page-skeleton-card-label { width: min(180px, 70%); height: 14px; }
+.page-skeleton-card-value { width: min(140px, 65%); height: 23px; }
+.page-skeleton-card-note { width: min(170px, 80%); height: 12px; }
+.page-skeleton-chart { display: grid; align-content: start; gap: 18px; }
+.page-skeleton-chart-body { width: 100%; height: 230px; margin-top: 16px; }
 .page-skeleton-settings, .page-skeleton-table { display: grid; gap: 14px; }
 .page-skeleton-settings { min-height: 200px; }
+.page-skeleton-tabs > * { width: 112px; flex: none; }
 .page-skeleton-table-row { height: 44px; }
-@media (max-width: 900px) { .page-skeleton-filters, .page-skeleton-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .page-skeleton { padding: 18px 16px 28px; } .page-skeleton-charts { grid-template-columns: minmax(0, 1fr); } .page-skeleton-panel { padding: 14px; } .page-skeleton-chart-body { height: 180px; } }
+@media (max-width: 640px) { .page-skeleton { padding: 18px 16px 28px; } .page-skeleton-panel { padding: 14px; } .page-skeleton-chart-body { height: 180px; } }
+@media (prefers-reduced-motion: reduce) { :is(.page-skeleton, .page-skeleton-chart) [data-slot="skeleton"] { animation: none; } }
 
 :root[data-color-mode="dark"] {
   --background: #0f172a;

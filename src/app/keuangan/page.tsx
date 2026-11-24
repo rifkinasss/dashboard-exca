@@ -3,4 +3,4 @@ import { ManagementGate } from "@/features/auth/components/management-gate";
 
 export const metadata = { title: "Data Keuangan" };
 
-export default function KeuanganPage() { return <ManagementGate title="Data Keuangan"><ManagementRecordRoute kind="finance" /></ManagementGate>; }
+export default function KeuanganPage() { return <ManagementGate layout="finance" title="Data Keuangan"><ManagementRecordRoute kind="finance" /></ManagementGate>; }
